@@ -67,7 +67,12 @@ export function RoutePanel({ includeWarn, onIncludeWarn, route, stations, depotN
                 {src.text}
               </span>
             )}
-            {route.loading && <span className="route-loading">갱신 중…</span>}
+            {route.loading && (
+              <span className="route-loading">
+                <span className="spinner" aria-hidden="true" />
+                경로 갱신 중…
+              </span>
+            )}
           </div>
           {route.warning && <p className="route-warning">{route.warning}</p>}
           <ol className="route-steps" aria-label="방문 순서">
