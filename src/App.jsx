@@ -13,6 +13,7 @@ import { PriorityList } from "./components/PriorityList.jsx";
 import { MapView } from "./components/MapView.jsx";
 import { DrainDetail } from "./components/DrainDetail.jsx";
 import { RoutePanel } from "./components/RoutePanel.jsx";
+import { StationCard } from "./components/StationCard.jsx";
 import { Alerts } from "./components/Toasts.jsx";
 import { collectTargets, filterStations } from "./ui/format.js";
 import { useHashRoute, navigate, paths } from "./ui/router.js";
@@ -57,6 +58,9 @@ export default function App() {
   const [stateFilter, setStateFilter] = useState(null);
   const bySource = useMemo(() => filterStations(sim.stations, { source }), [sim.stations, source]);
   const shown = useMemo(() => filterStations(bySource, { state: stateFilter }), [bySource, stateFilter]);
+  // 메인에서 선택한 지점 → 지도 위 요약 카드 (필터로 빠지면 숨김)
+  const [selectedId, setSelectedId] = useState(null);
+  const selected = shown.find((s) => s.id === selectedId) ?? null;
 
   // 수거 경로 (수거 경로 페이지에서만 계산): 위험(+주의) 지점을 출발지에서 도는 순서와 도로 경로
   const [routeWarn, setRouteWarn] = useState(true);
@@ -92,10 +96,19 @@ export default function App() {
               state={stateFilter}
               onState={setStateFilter}
             />
-            <PriorityList stations={shown} now={sim.now} selectedId={null} onSelect={openStation} />
+            <PriorityList stations={shown} now={sim.now} selectedId={selected?.id ?? null} onSelect={setSelectedId} />
           </aside>
           <main className="layout-main">
-            <MapView stations={shown} onSelect={openStation} />
+            <MapView stations={shown} selectedId={selected?.id ?? null} onSelect={setSelectedId}>
+              {selected && (
+                <StationCard
+                  station={selected}
+                  now={sim.now}
+                  onClose={() => setSelectedId(null)}
+                  onDetail={() => openStation(selected.id)}
+                />
+              )}
+            </MapView>
           </main>
         </div>
       )}

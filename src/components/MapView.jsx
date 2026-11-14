@@ -22,6 +22,7 @@ export function MapView({
   depot = null,
   tall = false,
   label = "지점 지도",
+  children = null, // 지도 위에 띄울 요소 (선택 지점 요약 카드 등)
 }) {
   const elRef = useRef(null);
   const ctxRef = useRef(null); // { L, map, markers: Map<id, L.Marker> }
@@ -161,22 +162,26 @@ export function MapView({
 
   return (
     <section className="card map-card" aria-label={label}>
-      <div ref={elRef} className={`map${tall ? " is-tall" : ""}`} />
-      {tilesFailed && (
-        <p className="map-offline" role="status">
-          지도 배경을 불러오지 못했습니다 (인터넷 확인) — 지점 마커와 선택은 정상 동작합니다.
-        </p>
-      )}
-      <ul className="map-legend" aria-label="범례">
-        {LEGEND.map((st) => (
-          <li key={st}>
-            <span className={`legend-dot st-${st}`} aria-hidden="true">
-              {STATE_META[st].icon}
-            </span>
-            {SHORT[st]}
-          </li>
-        ))}
-      </ul>
+      {/* 지도 + 지도에 붙는 안내·범례 (좁은 화면에서 카드가 지도 아래로 내려가도 범례는 지도에 남게) */}
+      <div className="map-box">
+        <div ref={elRef} className={`map${tall ? " is-tall" : ""}`} />
+        {tilesFailed && (
+          <p className="map-offline" role="status">
+            지도 배경을 불러오지 못했습니다 (인터넷 확인) — 지점 마커와 선택은 정상 동작합니다.
+          </p>
+        )}
+        <ul className="map-legend" aria-label="범례">
+          {LEGEND.map((st) => (
+            <li key={st}>
+              <span className={`legend-dot st-${st}`} aria-hidden="true">
+                {STATE_META[st].icon}
+              </span>
+              {SHORT[st]}
+            </li>
+          ))}
+        </ul>
+      </div>
+      {children}
     </section>
   );
 }

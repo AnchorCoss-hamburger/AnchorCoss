@@ -757,6 +757,15 @@ button.summary-cell:hover {
   }
 }
 
+/* 지도 + 안내·범례를 묶는 상자 (범례 위치 기준) */
+.map-box {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 /* divIcon 기본 흰 상자 제거 */
 .map-icon {
   background: none;
@@ -1433,4 +1442,104 @@ button.summary-cell:hover {
 }
 .back-link.btn:hover {
   text-decoration: none;
+}
+
+/* ---------- 선택 지점 요약 카드 (메인 지도 위 오른쪽) ---------- */
+.station-card {
+  position: absolute;
+  top: var(--sp-3);
+  right: var(--sp-3);
+  bottom: var(--sp-3);
+  z-index: 600; /* 마커 위, Leaflet 컨트롤(800) 아래 */
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--st-normal);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(16, 24, 40, 0.16);
+}
+.station-card.is-warn { border-top-color: var(--st-warn); }
+.station-card.is-danger { border-top-color: var(--st-danger); }
+.station-card.is-check { border-top-color: var(--st-check); }
+.station-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+.station-card-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.station-card-title h2 {
+  font-size: 18px;
+  font-weight: 700;
+}
+.station-card-close {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-sub);
+  font-size: 14px;
+  cursor: pointer;
+}
+.station-card-close:hover {
+  background: var(--bg);
+}
+.station-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+}
+.station-card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-3) var(--sp-4);
+  margin: 0;
+  padding: var(--sp-3) 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.station-card-grid .is-wide {
+  grid-column: 1 / -1;
+}
+.station-card-grid dt {
+  color: var(--text-mute);
+  font-size: 12px;
+}
+.station-card-grid dd {
+  margin: 2px 0 0;
+  font-size: var(--fs-body);
+  font-weight: 600;
+}
+.station-card-total {
+  font-size: 26px !important;
+  font-weight: 700;
+}
+.station-card-reason {
+  color: var(--text-sub);
+  font-size: var(--fs-small);
+}
+.station-card-more {
+  margin-top: auto;
+  height: 40px;
+}
+/* 좁은 화면: 지도를 가리지 않게 지도 아래에 붙임 */
+@media (max-width: 700px) {
+  .station-card {
+    position: static;
+    width: auto;
+    margin: var(--sp-2);
+    box-shadow: none;
+  }
 }
