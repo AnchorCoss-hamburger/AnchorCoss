@@ -27,20 +27,20 @@ export function TopBar({ sim, mode, onMode, weather, feed, realStation, page }) 
           {fmtClock(sim.now)}
           {!sim.playing && <span className="muted"> · 일시정지</span>}
         </span>
-        <nav className="topbar-nav" aria-label="페이지">
-          {NAV.map((n) => (
-            <a
-              key={n.page}
-              href={n.href}
-              className={`nav-link${page === n.page ? " is-active" : ""}`}
-              aria-current={page === n.page ? "page" : undefined}
-            >
-              {n.label}
-            </a>
-          ))}
-        </nav>
       </div>
       <ScenarioControls sim={sim} mode={mode} onMode={onMode} weather={weather} feed={feed} realStation={realStation} />
+      <nav className="page-tabs" aria-label="페이지">
+        {NAV.map((n) => (
+          <a
+            key={n.page}
+            href={n.href}
+            className={`page-tab${page === n.page ? " is-active" : ""}`}
+            aria-current={page === n.page ? "page" : undefined}
+          >
+            {n.label}
+          </a>
+        ))}
+      </nav>
     </header>
   );
 }

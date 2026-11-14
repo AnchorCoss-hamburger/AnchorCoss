@@ -57,8 +57,12 @@ export function Summary({ stations, source, onSource, state, onState }) {
           );
         })}
       </div>
-      <button className="btn btn-sm summary-all" onClick={() => onState(null)} disabled={state == null}>
-        전체 상태 보기
+      <button
+        className={`btn btn-sm summary-all${state == null ? " is-active" : ""}`}
+        aria-pressed={state == null}
+        onClick={() => onState(null)}
+      >
+        {state == null ? "전체 상태 보는 중" : "전체 상태 보기"}
       </button>
     </section>
   );

@@ -9,7 +9,7 @@ import { sortByPriority, fmtAgo } from "../ui/format.js";
 export function PriorityList({ stations, now, selectedId, onSelect }) {
   const sorted = sortByPriority(stations);
   return (
-    <section className="card" aria-label="수거 우선순위">
+    <section className="card prio-card" aria-label="수거 우선순위">
       <div className="card-title">수거 우선순위</div>
       {sorted.length === 0 && <p className="muted">선택한 조건에 맞는 지점이 없습니다.</p>}
       <ol className="plain-list">

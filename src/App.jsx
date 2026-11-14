@@ -101,8 +101,8 @@ export default function App() {
       )}
 
       {page.page === "station" && (
-        <main className="page">
-          <a className="back-link" href={paths.main()}>
+        <main className="page is-narrow">
+          <a className="back-link btn" href={paths.main()}>
             ← 대시보드로
           </a>
           {station ? (

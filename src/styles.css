@@ -366,26 +366,6 @@ button {
   font-weight: 700;
   white-space: nowrap;
 }
-.topbar-nav {
-  display: inline-flex;
-  gap: var(--sp-1);
-  align-self: center;
-}
-.nav-link {
-  padding: 4px var(--sp-3);
-  border-radius: var(--radius-sm);
-  color: var(--text-sub);
-  font-size: var(--fs-small);
-  font-weight: 600;
-  text-decoration: none;
-}
-.nav-link:hover {
-  background: var(--bg);
-}
-.nav-link.is-active {
-  color: var(--accent);
-  background: var(--accent-soft);
-}
 .topbar-clock {
   display: inline-flex;
   align-items: center;
@@ -828,6 +808,8 @@ button.summary-cell:hover {
   top: var(--sp-3);
   left: 50%;
   transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - 96px); /* 확대·축소 버튼과 겹치지 않게 */
   z-index: 500;
   margin: 0;
   padding: 6px var(--sp-3);
@@ -836,7 +818,6 @@ button.summary-cell:hover {
   box-shadow: var(--shadow);
   font-size: 12px;
   color: var(--st-warn-text);
-  white-space: nowrap;
 }
 .gauge-empty {
   min-height: 150px;
@@ -1338,4 +1319,88 @@ button.summary-cell:hover {
 
 .route-intro {
   margin-bottom: var(--sp-3);
+}
+
+/* ---------- 페이지 탭 (상단바 둘째 줄) ---------- */
+.topbar {
+  padding-bottom: 0;
+}
+.page-tabs {
+  flex: 0 0 calc(100% + 2 * var(--sp-5)); /* 상단바 좌우 여백까지 선을 이어서 */
+  display: flex;
+  gap: var(--sp-1);
+  margin: 0 calc(-1 * var(--sp-5));
+  padding: 0 var(--sp-5);
+  border-top: 1px solid var(--border);
+}
+.page-tab {
+  padding: var(--sp-2) var(--sp-3);
+  border-bottom: 3px solid transparent;
+  color: var(--text-sub);
+  font-size: var(--fs-body);
+  font-weight: 600;
+  text-decoration: none;
+}
+.page-tab:hover {
+  color: var(--text);
+}
+.page-tab.is-active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* ---------- 메인: 지도 높이를 왼쪽 열(요약 + 목록)에 맞춤 ---------- */
+@media (min-width: 1100px) {
+  .layout-main {
+    align-self: stretch;
+  }
+  .layout-main .map-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  .layout-main .map {
+    flex: 1;
+    height: auto;
+    min-height: 480px;
+  }
+  /* 목록이 길면 카드 안에서 스크롤 */
+  .prio-card .plain-list {
+    max-height: calc(100vh - 360px);
+    min-height: 240px;
+    overflow-y: auto;
+    margin-right: calc(-1 * var(--sp-2));
+    padding-right: var(--sp-2);
+  }
+}
+
+/* 좁은 화면: 요약 → 지도 → 목록 순서 */
+@media (max-width: 1099px) {
+  .layout-side {
+    display: contents;
+  }
+  .layout-side > :first-child {
+    order: 1;
+  }
+  .layout-main {
+    order: 2;
+  }
+  .layout-side > :nth-child(2) {
+    order: 3;
+  }
+}
+
+/* ---------- 상세 페이지 ---------- */
+.page.is-narrow {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+}
+.back-link.btn {
+  text-decoration: none;
+  color: var(--text);
+  font-weight: 600;
+}
+.back-link.btn:hover {
+  text-decoration: none;
 }

@@ -45,7 +45,11 @@ export function MapView({
       ctxRef.current = { L, map, markers: new Map(), fitted: false, routeLine: null, depotMarker: null };
       setReady(true);
     });
+    // 지도 상자 크기가 바뀌면(필터로 목록 길이가 바뀌는 등) 다시 그린다
+    const ro = new ResizeObserver(() => ctxRef.current?.map.invalidateSize());
+    if (elRef.current) ro.observe(elRef.current);
     return () => {
+      ro.disconnect();
       disposed = true;
       ctxRef.current?.map.remove();
       ctxRef.current = null;
