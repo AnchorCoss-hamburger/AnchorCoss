@@ -90,13 +90,22 @@ POST /api/sensor-data
 3. 상단바에서 **실시간** 모드로 전환
 4. 테스트 데이터(`npm run fake-sensor`)는 같은 DB에 쌓이므로, 발표·합동 테스트 전에 `npm run db:reset -- --yes`로 비울 것
 
+## 수거 경로
+
+지도 아래 **수거 경로** 패널에서 "경로 보기"를 누르면, 위험(또는 위험+주의) 지점을 출발지에서 도는 가장 빠른 순서와 도로 경로를 지도에 그린다. 총 거리·이동 시간·방문 순서를 함께 표시한다.
+
+- 계산: `POST /api/route` → 공개 OSRM 서버(오픈스트리트맵 도로, 키 불필요)의 순회 경로 최적화(trip)
+- 대체 순서: OSRM 실패 시 ① 저장된 같은 경로(`data/route-cache.json`) ② 직선 추정(가까운 지점부터, 점선 표시)
+- 공개 OSRM 서버는 시험용이라 느리거나 멈출 수 있다. **발표 전에 인터넷이 되는 곳에서 같은 흐름(처음부터 → 재생)으로 경로를 한 번 띄워 두면** 저장분이 쌓여 당일 인터넷이 끊겨도 도로 경로가 나온다
+- 출발지 좌표는 `src/config.js`의 `DEPOT`, 지점 좌표는 `src/sim/simulator.js`의 `DEFAULT_STATIONS` (충북대 주변 임시 좌표 15곳, 실제 빗물받이 위치 아님)
+
 ## 폴더 구조
 
 ```
-api/            API 핸들러 (weather: 기상청 프록시, sensor-data: 센서 수신, stations: 이력 조회)
+api/            API 핸들러 (weather: 기상청 프록시, sensor-data: 센서 수신, stations: 이력 조회, route: 수거 경로)
 server/         SQLite 저장소(db.js)·수신 검증(ingest.js)·공통 도우미(http.js)
 data/           SQLite 파일 (git 제외)
-lib/            기상청 API 호출·파싱·위경도→격자 변환 (kma.js)
+lib/            기상청 API 호출·파싱·위경도→격자 변환 (kma.js), 수거 경로 계산 (route.js)
 scripts/        시나리오 출력 등 보조 스크립트
 public/         정적 파일
 src/
@@ -120,6 +129,7 @@ src/
 - [x] 기상청 API 연동: 초단기실황 프록시 + 강우 모드(시뮬레이션/실시간) (`lib/kma.js`, `api/weather.js`, `src/sim/useWeather.js`)
 - [x] 센서 수신 서버·DB: 수신 API + SQLite + 이력 조회, 실시간 모드에서 실물 지점 연동, 센서 흉내 스크립트
 - [x] 임계값 하드웨어 기준 적용 (주의 250 / 2단계 500 / 위험 1000g, 로드셀 정격 1kg ×2), 30초 이동 중앙값, 1초 간격 대응 (`docs/기획서.md` 4.8·4.9)
+- [x] 지점 15곳(충북대 주변 임시 좌표) + 수거 경로(OSRM, 저장분·직선 대체) (`lib/route.js`, `api/route.js`, `RoutePanel`)
 - [ ] USB 시리얼 브리지 (Uno 시리얼 출력 → `POST /api/sensor-data`, 시리얼 출력 형식 확정 후)
 - [ ] 영점(뜰채·뚜껑 무게) 처리 방식 결정 — 보류
 - [ ] 판정 결과 서버 저장·일자별 통계 (후속)

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { countByState, sortByPriority, fmtAgo, fmtG, rssiLevel, toChartData, downsample, rainSegments } from "./format.js";
+import { countByState, sortByPriority, fmtAgo, fmtG, rssiLevel, toChartData, downsample, rainSegments, collectTargets, fmtDistance, fmtDuration } from "./format.js";
 
 describe("downsample", () => {
   const pt = (ts, total, rain = 0) => ({ ts, left: total == null ? null : total / 2, right: total == null ? null : total / 2, total, rain });
@@ -95,5 +95,24 @@ describe("fmtAgo / fmtG", () => {
   it("중량", () => {
     expect(fmtG(1234.4)).toBe("1,234g");
     expect(fmtG(null)).toBe("—");
+  });
+});
+
+describe("수거 경로 도우미", () => {
+  const st = (id, state) => ({ id, judgement: { state } });
+  const list = [st("a", "normal"), st("b", "warn"), st("c", "danger"), st("d", "check")];
+
+  it("collectTargets: 위험+주의, 점검 필요 제외", () => {
+    expect(collectTargets(list).map((s) => s.id)).toEqual(["b", "c"]);
+    expect(collectTargets(list, { includeWarn: false }).map((s) => s.id)).toEqual(["c"]);
+  });
+
+  it("fmtDistance / fmtDuration", () => {
+    expect(fmtDistance(850.4)).toBe("850m");
+    expect(fmtDistance(2449)).toBe("2.4km");
+    expect(fmtDuration(20)).toBe("약 1분");
+    expect(fmtDuration(720)).toBe("약 12분");
+    expect(fmtDuration(3900)).toBe("약 1시간 5분");
+    expect(fmtDuration(3600)).toBe("약 1시간");
   });
 });

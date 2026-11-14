@@ -2,6 +2,7 @@
 // - Leaflet은 브라우저 전용이라 effect 안에서 동적으로 불러온다 (번들도 분리됨)
 // - 타일은 OpenStreetMap. 인터넷이 없으면 배경만 비고 마커·선택은 그대로 동작한다.
 // - 마커 DOM은 한 번 만들고 클래스만 바꾼다 (펄스 애니메이션이 매 틱 재시작되지 않게)
+// - route가 있으면 수거 경로 선 · 출발지 · 마커 위 방문 순서 번호를 그린다 (RoutePanel과 연동)
 
 import { useEffect, useRef, useState } from "react";
 import { MAP_CENTER } from "../config.js";
@@ -13,7 +14,7 @@ const MARKER_SIZE = 28;
 const LEGEND = [STATES.NORMAL, STATES.WARN, STATES.DANGER, STATES.CHECK];
 const SHORT = { normal: "정상", warn: "주의", danger: "위험", check: "점검 필요" };
 
-export function MapView({ stations, selectedId, onSelect }) {
+export function MapView({ stations, selectedId, onSelect, route = null, depot = null }) {
   const elRef = useRef(null);
   const ctxRef = useRef(null); // { L, map, markers: Map<id, L.Marker> }
   const onSelectRef = useRef(onSelect);
@@ -33,7 +34,7 @@ export function MapView({ stations, selectedId, onSelect }) {
       const tiles = L.tileLayer(TILE_URL, { maxZoom: 19, attribution: TILE_ATTR }).addTo(map);
       tiles.on("tileerror", () => setTilesFailed(true));
       tiles.on("tileload", () => setTilesFailed(false));
-      ctxRef.current = { L, map, markers: new Map(), fitted: false };
+      ctxRef.current = { L, map, markers: new Map(), fitted: false, routeLine: null, depotMarker: null };
       setReady(true);
     });
     return () => {
@@ -48,6 +49,7 @@ export function MapView({ stations, selectedId, onSelect }) {
     const ctx = ctxRef.current;
     if (!ready || !ctx) return;
     const { L, map, markers } = ctx;
+    const orderNo = new Map((route?.order ?? []).map((id, i) => [id, i + 1]));
 
     for (const s of stations) {
       let m = markers.get(s.id);
@@ -55,7 +57,7 @@ export function MapView({ stations, selectedId, onSelect }) {
         m = L.marker([s.lat, s.lng], {
           icon: L.divIcon({
             className: "map-icon",
-            html: '<div class="map-marker"></div>',
+            html: '<div class="map-marker"></div><span class="map-order" hidden></span>',
             iconSize: [MARKER_SIZE, MARKER_SIZE],
             iconAnchor: [MARKER_SIZE / 2, MARKER_SIZE / 2],
           }),
@@ -74,10 +76,17 @@ export function MapView({ stations, selectedId, onSelect }) {
         el.className = `map-marker st-${st}${selected ? " is-selected" : ""}${st === STATES.DANGER ? " is-alert" : ""}`;
         el.textContent = STATE_META[st].icon;
       }
+      const badge = m.getElement()?.querySelector(".map-order");
+      const no = orderNo.get(s.id);
+      if (badge) {
+        badge.hidden = no == null;
+        badge.textContent = no ?? "";
+      }
       m.setZIndexOffset(selected ? 1000 : st === STATES.DANGER ? 500 : 0);
       const score = s.judgement.score == null ? "" : ` · 점수 ${s.judgement.score}`;
-      m.setTooltipContent(`<b>${s.name}</b><br>${STATE_META[st].label}${score}`);
-      m.getElement()?.setAttribute("aria-label", `${s.name}, ${STATE_META[st].label}${score}`);
+      const visit = no == null ? "" : ` · 수거 ${no}번째`;
+      m.setTooltipContent(`<b>${s.name}</b><br>${STATE_META[st].label}${score}${visit}`);
+      m.getElement()?.setAttribute("aria-label", `${s.name}, ${STATE_META[st].label}${score}${visit}`);
     }
 
     // 처음 한 번 모든 지점이 보이게
@@ -85,7 +94,35 @@ export function MapView({ stations, selectedId, onSelect }) {
       map.fitBounds(L.latLngBounds(stations.map((s) => [s.lat, s.lng])), { padding: [48, 48] });
       ctx.fitted = true;
     }
-  }, [stations, selectedId, ready]);
+  }, [stations, selectedId, ready, route]);
+
+  // 수거 경로 선 · 출발지 마커
+  useEffect(() => {
+    const ctx = ctxRef.current;
+    if (!ready || !ctx) return;
+    const { L, map } = ctx;
+    ctx.routeLine?.remove();
+    ctx.routeLine = null;
+    ctx.depotMarker?.remove();
+    ctx.depotMarker = null;
+    if (!route || !depot) return;
+
+    if (route.path?.length > 1) {
+      ctx.routeLine = L.polyline(route.path, {
+        className: `route-line is-${route.source}`,
+        interactive: false,
+      }).addTo(map);
+      ctx.routeLine.bringToBack();
+    }
+    ctx.depotMarker = L.marker([depot.lat, depot.lng], {
+      icon: L.divIcon({ className: "map-icon", html: '<div class="map-depot">출발</div>', iconSize: [40, 22], iconAnchor: [20, 11] }),
+      keyboard: false,
+      interactive: true,
+      zIndexOffset: 1500,
+    })
+      .bindTooltip(`${depot.name} (수거 출발·복귀)`, { direction: "top", offset: [0, -11] })
+      .addTo(map);
+  }, [route, depot, ready]);
 
   // 선택 지점이 화면 밖이면 이동
   useEffect(() => {

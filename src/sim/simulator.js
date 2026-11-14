@@ -17,10 +17,14 @@ export function mulberry32(seed) {
   };
 }
 
-// 지점 좌표는 REGION 확정 전 임시값 (MAP_CENTER 주변)
+// 지점 좌표는 충북대 주변 임시값 (MAP_CENTER 기준 오프셋). 실제 빗물받이 위치가 아니며 지도로 확인 후 조정한다.
+// 수거 경로(OSRM)는 각 좌표를 가장 가까운 도로에 붙여 계산하므로 도로에서 조금 벗어나도 동작한다.
 const at = (dLat, dLng) => ({ lat: MAP_CENTER.lat + dLat, lng: MAP_CENTER.lng + dLng });
 
-/** 기본 지점: 실물 1 + 가상 7, 지점마다 다른 시나리오 */
+/**
+ * 기본 지점: 실물 1 + 가상 14, 시나리오 8종을 모두 한 번 이상 배정.
+ * startMin: 시나리오를 몇 분 지점부터 시작할지 (같은 시나리오 지점이 동시에 움직이지 않게)
+ */
 export const DEFAULT_STATIONS = [
   { id: "st-1", name: "빗물받이 #1 (실물)", real: true, scenarioId: "gradual", ...at(0, 0) },
   { id: "st-2", name: "빗물받이 #2", real: false, scenarioId: "normal", ...at(0.004, -0.006) },
@@ -30,6 +34,13 @@ export const DEFAULT_STATIONS = [
   { id: "st-6", name: "빗물받이 #6", real: false, scenarioId: "commDrop", ...at(0.002, 0.011) },
   { id: "st-7", name: "빗물받이 #7", real: false, scenarioId: "sensorFault", ...at(-0.007, 0.002) },
   { id: "st-8", name: "빗물받이 #8", real: false, scenarioId: "spike", ...at(0.008, -0.002) },
+  { id: "st-9", name: "빗물받이 #9", real: false, scenarioId: "normal", startMin: 20, ...at(0.0005, -0.0035) },
+  { id: "st-10", name: "빗물받이 #10", real: false, scenarioId: "gradual", startMin: 35, ...at(0.01, 0.0075) },
+  { id: "st-11", name: "빗물받이 #11", real: false, scenarioId: "rainSurge", startMin: 20, ...at(-0.009, -0.007) },
+  { id: "st-12", name: "빗물받이 #12", real: false, scenarioId: "normal", startMin: 40, ...at(-0.006, 0.011) },
+  { id: "st-13", name: "빗물받이 #13", real: false, scenarioId: "imbalance", startMin: 20, ...at(0.0035, 0.0025) },
+  { id: "st-14", name: "빗물받이 #14", real: false, scenarioId: "gradual", startMin: 55, ...at(-0.0105, 0.006) },
+  { id: "st-15", name: "빗물받이 #15", real: false, scenarioId: "collect", startMin: 10, ...at(0.011, -0.008) },
 ];
 
 const WEIGHT_NOISE_G = 40; // 하드웨어 오차 ±100g 가정 → 표준편차 40g (±100g ≈ 2.5σ)
@@ -63,7 +74,7 @@ export function createSimulator({
       s.id,
       {
         ...s,
-        elapsedSec: 0,
+        elapsedSec: (s.startMin ?? 0) * 60,
         offsetL: 0, // 수거(리셋) 시 빼는 값
         offsetR: 0,
         lastBaseL: 0,

@@ -1,17 +1,20 @@
 // 대시보드 레이아웃 (docs/DESIGN.md 4장)
 // useSimulation()은 여기서 한 번만 호출하고, 하위 컴포넌트에는 props로 내려준다.
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSimulation } from "./sim/useSimulation.js";
 import { useWeather } from "./sim/useWeather.js";
 import { useSensorFeed } from "./sim/useSensorFeed.js";
+import { useRoute } from "./sim/useRoute.js";
 import { DEFAULT_STATIONS } from "./sim/simulator.js";
 import { TopBar } from "./components/TopBar.jsx";
 import { Summary } from "./components/Summary.jsx";
 import { PriorityList } from "./components/PriorityList.jsx";
 import { MapView } from "./components/MapView.jsx";
 import { DrainDetail } from "./components/DrainDetail.jsx";
+import { RoutePanel } from "./components/RoutePanel.jsx";
 import { Alerts } from "./components/Toasts.jsx";
-import { sortByPriority } from "./ui/format.js";
+import { sortByPriority, collectTargets } from "./ui/format.js";
+import { DEPOT } from "./config.js";
 
 // 실물 센서를 연결할 지점 (기본: 빗물받이 #1)
 const REAL_STATION_ID = DEFAULT_STATIONS.find((s) => s.real)?.id ?? null;
@@ -48,6 +51,12 @@ export default function App() {
   const feed = useSensorFeed({ enabled: live, stationId: REAL_STATION_ID, onSamples, resetKey: sim.runId });
   const realStation = sim.stations.find((s) => s.id === REAL_STATION_ID) ?? null;
 
+  // 수거 경로: 위험(+주의) 지점을 출발지에서 도는 순서와 도로 경로
+  const [routeOn, setRouteOn] = useState(false);
+  const [routeWarn, setRouteWarn] = useState(true);
+  const targets = useMemo(() => collectTargets(sim.stations, { includeWarn: routeWarn }), [sim.stations, routeWarn]);
+  const route = useRoute({ enabled: routeOn, depot: DEPOT, points: targets });
+
   return (
     <div className="app">
       {/* 상단바 + 위험 배너는 스크롤해도 위에 고정 */}
@@ -63,7 +72,23 @@ export default function App() {
           <PriorityList stations={sim.stations} now={sim.now} selectedId={selectedId} onSelect={setSelectedId} />
         </aside>
         <main className="layout-main">
-          <MapView stations={sim.stations} selectedId={selectedId} onSelect={setSelectedId} />
+          <MapView
+            stations={sim.stations}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            route={routeOn ? route.data : null}
+            depot={routeOn ? DEPOT : null}
+          />
+          <RoutePanel
+            enabled={routeOn}
+            onToggle={setRouteOn}
+            includeWarn={routeWarn}
+            onIncludeWarn={setRouteWarn}
+            route={route}
+            stations={sim.stations}
+            depotName={DEPOT.name}
+            onSelect={setSelectedId}
+          />
           <DrainDetail
             station={selected}
             now={sim.now}

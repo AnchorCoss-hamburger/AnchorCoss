@@ -753,6 +753,54 @@ button {
   place-items: center;
 }
 
+/* 수거 경로 (RoutePanel · MapView) */
+.route-line {
+  stroke: var(--accent);
+  stroke-width: 5;
+  stroke-opacity: 0.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+.route-line.is-straight {
+  stroke-dasharray: 8 8; /* 직선 추정은 점선 */
+  stroke-width: 3;
+}
+.map-order {
+  position: absolute;
+  top: -8px;
+  right: -10px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  border: 2px solid #fff;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+}
+.map-order[hidden] {
+  display: none;
+}
+.map-depot {
+  width: 40px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  border: 2px solid #fff;
+  background: var(--text);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
 .map-legend {
   position: absolute;
   left: var(--sp-3);
@@ -1075,4 +1123,106 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+}
+
+/* ---------- 수거 경로 패널 ---------- */
+.route-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+}
+.route-title {
+  margin-bottom: 0;
+}
+.route-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+.route-empty {
+  color: var(--text-mute);
+  font-size: var(--fs-small);
+}
+.route-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-4);
+}
+.route-metric b {
+  font-size: 20px;
+  margin-right: 2px;
+}
+.route-src.is-osrm {
+  color: var(--st-normal-text);
+  background: var(--st-normal-bg);
+}
+.route-src.is-cache {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.route-src.is-straight {
+  color: var(--st-warn-text);
+  background: var(--st-warn-bg);
+}
+.route-loading {
+  color: var(--text-mute);
+  font-size: var(--fs-small);
+}
+.route-warning {
+  margin-top: var(--sp-2);
+  color: var(--st-warn-text);
+  font-size: var(--fs-small);
+}
+.route-steps {
+  list-style: none;
+  margin: var(--sp-3) 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-1);
+  font-size: var(--fs-small);
+}
+.route-step {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+.route-step + .route-step::before {
+  content: "→";
+  color: var(--text-mute);
+}
+.route-step.is-depot {
+  color: var(--text-sub);
+  font-weight: 600;
+}
+.route-stop {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px 2px 2px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.route-stop:hover {
+  background: var(--bg);
+}
+.route-no {
+  min-width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
 }

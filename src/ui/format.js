@@ -131,3 +131,28 @@ export function rainSegments(data, minMm) {
   if (start != null) segs.push({ from: start, to: data[data.length - 1].ts });
   return segs;
 }
+
+/**
+ * 수거 경로에 넣을 지점: 위험(수거 필요) 지점, includeWarn이면 주의 지점도.
+ * 점검 필요(통신 두절·센서 이상)는 무게를 믿을 수 없어 넣지 않는다.
+ */
+export function collectTargets(stations, { includeWarn = true } = {}) {
+  const want = new Set([STATES.DANGER, ...(includeWarn ? [STATES.WARN] : [])]);
+  return stations.filter((s) => want.has(s.judgement?.state));
+}
+
+/** 2.4km / 850m */
+export function fmtDistance(m) {
+  if (m == null) return "—";
+  return m >= 1000 ? `${(m / 1000).toFixed(1)}km` : `${Math.round(m)}m`;
+}
+
+/** 약 12분 / 약 1시간 5분 */
+export function fmtDuration(sec) {
+  if (sec == null) return "—";
+  const min = Math.max(1, Math.round(sec / 60));
+  if (min < 60) return `약 ${min}분`;
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return `약 ${h}시간${m ? ` ${m}분` : ""}`;
+}

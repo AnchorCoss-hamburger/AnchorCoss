@@ -13,6 +13,15 @@ export const REGION = {
 // 지도 초기 중심. 가상 지점 좌표는 이 주변에 배치된다 (src/sim/simulator.js)
 export const MAP_CENTER = { lat: REGION.lat, lng: REGION.lng, zoom: 15 };
 
+// 수거 경로의 출발·복귀 지점 (임시: 충북대 동쪽 도로변. 실제 차고지·청소 사무소가 정해지면 교체)
+export const DEPOT = { name: "출발지", lat: REGION.lat + 0.0012, lng: REGION.lng + 0.0045 };
+
+export const ROUTE = Object.freeze({
+  DEBOUNCE_MS: 1500, // 수거 대상이 바뀐 뒤 이 시간 동안 더 안 바뀌면 경로를 다시 계산 (OSRM 호출 수 절약)
+  STRAIGHT_SPEED_KMH: 20, // 직선 대체 경로의 예상 시간 계산용 평균 속도 (시내 주행 가정)
+  MAX_POINTS: 30, // 한 번에 계산할 최대 지점 수
+});
+
 export const TH = Object.freeze({
   WARN_TOTAL_G: 250, // 주의 기준 = 하드웨어 1단계 (총 중량, g)
   MID_TOTAL_G: 500, // 중간 눈금 = 하드웨어 2단계. 상태는 바꾸지 않고 근거 문구·그래프·게이지에 표시
