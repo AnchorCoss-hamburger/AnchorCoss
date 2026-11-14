@@ -1,4 +1,10 @@
 import { ScenarioControls } from "./ScenarioControls.jsx";
+import { paths } from "../ui/router.js";
+
+const NAV = [
+  { page: "main", label: "대시보드", href: paths.main() },
+  { page: "route", label: "수거 경로", href: paths.route() },
+];
 
 const fmtClock = (ts) =>
   new Date(ts).toLocaleString("ko-KR", {
@@ -10,8 +16,8 @@ const fmtClock = (ts) =>
     hour12: false,
   });
 
-/** 상단바: 제목 · 시뮬레이션 시각 · 시연 제어(전체 적용) */
-export function TopBar({ sim, mode, onMode, weather, feed, realStation }) {
+/** 상단바: 제목 · 시뮬레이션 시각 · 페이지 이동 · 시연 제어(전체 적용) */
+export function TopBar({ sim, mode, onMode, weather, feed, realStation, page }) {
   return (
     <header className="topbar">
       <div className="topbar-title">
@@ -21,15 +27,20 @@ export function TopBar({ sim, mode, onMode, weather, feed, realStation }) {
           {fmtClock(sim.now)}
           {!sim.playing && <span className="muted"> · 일시정지</span>}
         </span>
+        <nav className="topbar-nav" aria-label="페이지">
+          {NAV.map((n) => (
+            <a
+              key={n.page}
+              href={n.href}
+              className={`nav-link${page === n.page ? " is-active" : ""}`}
+              aria-current={page === n.page ? "page" : undefined}
+            >
+              {n.label}
+            </a>
+          ))}
+        </nav>
       </div>
-      <ScenarioControls
-        sim={sim}
-        mode={mode}
-        onMode={onMode}
-        weather={weather}
-        feed={feed}
-        realStation={realStation}
-      />
+      <ScenarioControls sim={sim} mode={mode} onMode={onMode} weather={weather} feed={feed} realStation={realStation} />
     </header>
   );
 }

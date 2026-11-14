@@ -1,5 +1,6 @@
 // 대시보드 레이아웃 (docs/DESIGN.md 4장)
 // useSimulation()은 여기서 한 번만 호출하고, 하위 컴포넌트에는 props로 내려준다.
+// 페이지(#/ 메인, #/station/<id> 지점 상세, #/route 수거 경로)를 옮겨도 시뮬레이션은 이어진다.
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSimulation } from "./sim/useSimulation.js";
 import { useWeather } from "./sim/useWeather.js";
@@ -13,7 +14,8 @@ import { MapView } from "./components/MapView.jsx";
 import { DrainDetail } from "./components/DrainDetail.jsx";
 import { RoutePanel } from "./components/RoutePanel.jsx";
 import { Alerts } from "./components/Toasts.jsx";
-import { sortByPriority, collectTargets } from "./ui/format.js";
+import { collectTargets, filterStations } from "./ui/format.js";
+import { useHashRoute, navigate, paths } from "./ui/router.js";
 import { DEPOT } from "./config.js";
 
 // 실물 센서를 연결할 지점 (기본: 빗물받이 #1)
@@ -21,9 +23,8 @@ const REAL_STATION_ID = DEFAULT_STATIONS.find((s) => s.real)?.id ?? null;
 
 export default function App() {
   const sim = useSimulation();
-  // 처음에는 우선순위 1위 지점을 선택
-  const [selectedId, setSelectedId] = useState(() => sortByPriority(sim.stations)[0]?.id ?? null);
-  const selected = sim.stations.find((s) => s.id === selectedId) ?? null;
+  const page = useHashRoute();
+  const openStation = useCallback((id) => navigate(paths.station(id)), []);
 
   // 데이터 모드
   //  "sim":  모든 지점 가상, 강우는 시나리오 또는 수동 입력
@@ -51,52 +52,89 @@ export default function App() {
   const feed = useSensorFeed({ enabled: live, stationId: REAL_STATION_ID, onSamples, resetKey: sim.runId });
   const realStation = sim.stations.find((s) => s.id === REAL_STATION_ID) ?? null;
 
-  // 수거 경로: 위험(+주의) 지점을 출발지에서 도는 순서와 도로 경로
-  const [routeOn, setRouteOn] = useState(false);
+  // 메인 필터: 실물/가상, 상태 (페이지를 옮겨도 유지)
+  const [source, setSource] = useState("all");
+  const [stateFilter, setStateFilter] = useState(null);
+  const bySource = useMemo(() => filterStations(sim.stations, { source }), [sim.stations, source]);
+  const shown = useMemo(() => filterStations(bySource, { state: stateFilter }), [bySource, stateFilter]);
+
+  // 수거 경로 (수거 경로 페이지에서만 계산): 위험(+주의) 지점을 출발지에서 도는 순서와 도로 경로
   const [routeWarn, setRouteWarn] = useState(true);
   const targets = useMemo(() => collectTargets(sim.stations, { includeWarn: routeWarn }), [sim.stations, routeWarn]);
-  const route = useRoute({ enabled: routeOn, depot: DEPOT, points: targets });
+  const route = useRoute({ enabled: page.page === "route", depot: DEPOT, points: targets });
+
+  const station = page.page === "station" ? (sim.stations.find((s) => s.id === page.id) ?? null) : null;
 
   return (
     <div className="app">
       {/* 상단바 + 위험 배너는 스크롤해도 위에 고정 */}
       <div className="sticky-head">
-        <TopBar sim={sim} mode={mode} onMode={setMode} weather={weather} feed={feed} realStation={realStation} />
+        <TopBar
+          sim={sim}
+          mode={mode}
+          onMode={setMode}
+          weather={weather}
+          feed={feed}
+          realStation={realStation}
+          page={page.page}
+        />
         {/* key=runId: "처음부터"를 누르면 알림 닫기 기록·토스트도 초기화 */}
-        <Alerts key={sim.runId} stations={sim.stations} events={sim.events} onSelect={setSelectedId} />
+        <Alerts key={sim.runId} stations={sim.stations} events={sim.events} onSelect={openStation} />
       </div>
 
-      <div className="layout">
-        <aside className="layout-side">
-          <Summary stations={sim.stations} />
-          <PriorityList stations={sim.stations} now={sim.now} selectedId={selectedId} onSelect={setSelectedId} />
-        </aside>
-        <main className="layout-main">
+      {page.page === "main" && (
+        <div className="layout">
+          <aside className="layout-side">
+            <Summary
+              stations={bySource}
+              source={source}
+              onSource={setSource}
+              state={stateFilter}
+              onState={setStateFilter}
+            />
+            <PriorityList stations={shown} now={sim.now} selectedId={null} onSelect={openStation} />
+          </aside>
+          <main className="layout-main">
+            <MapView stations={shown} onSelect={openStation} />
+          </main>
+        </div>
+      )}
+
+      {page.page === "station" && (
+        <main className="page">
+          <a className="back-link" href={paths.main()}>
+            ← 대시보드로
+          </a>
+          {station ? (
+            <DrainDetail station={station} now={sim.now} onCollect={sim.collect} onScenario={sim.setScenario} />
+          ) : (
+            <section className="card">
+              <p className="muted">지점을 찾을 수 없습니다 ({page.id}).</p>
+            </section>
+          )}
+        </main>
+      )}
+
+      {page.page === "route" && (
+        <main className="page">
           <MapView
             stations={sim.stations}
-            selectedId={selectedId}
-            onSelect={setSelectedId}
-            route={routeOn ? route.data : null}
-            depot={routeOn ? DEPOT : null}
+            onSelect={openStation}
+            route={route.data}
+            depot={DEPOT}
+            tall
+            label="수거 경로 지도"
           />
           <RoutePanel
-            enabled={routeOn}
-            onToggle={setRouteOn}
             includeWarn={routeWarn}
             onIncludeWarn={setRouteWarn}
             route={route}
             stations={sim.stations}
             depotName={DEPOT.name}
-            onSelect={setSelectedId}
-          />
-          <DrainDetail
-            station={selected}
-            now={sim.now}
-            onCollect={sim.collect}
-            onScenario={sim.setScenario}
+            onSelect={openStation}
           />
         </main>
-      </div>
+      )}
     </div>
   );
 }

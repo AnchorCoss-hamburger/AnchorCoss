@@ -1,4 +1,4 @@
-// 수거 경로 패널: 켜기/끄기 · 대상 범위(위험만 / 위험+주의) · 총 거리·시간 · 방문 순서
+// 수거 경로 패널 (수거 경로 페이지): 대상 범위(위험만 / 위험+주의) · 총 거리·시간 · 방문 순서
 // 경로 계산은 useRoute(App에서 호출), 지도에 선을 그리는 것은 MapView가 한다.
 
 import { fmtDistance, fmtDuration } from "../ui/format.js";
@@ -9,7 +9,7 @@ const SOURCE_LABEL = {
   straight: { text: "직선 추정", hint: "도로 경로를 받지 못해 직선 거리로 계산 (실제보다 짧음)" },
 };
 
-export function RoutePanel({ enabled, onToggle, includeWarn, onIncludeWarn, route, stations, depotName, onSelect }) {
+export function RoutePanel({ includeWarn, onIncludeWarn, route, stations, depotName, onSelect }) {
   const data = route.data;
   const nameOf = new Map(stations.map((s) => [s.id, s.name]));
   const src = data && SOURCE_LABEL[data.source];
@@ -20,25 +20,36 @@ export function RoutePanel({ enabled, onToggle, includeWarn, onIncludeWarn, rout
         <div className="card-title route-title">수거 경로</div>
         <div className="route-actions">
           <span className="btn-group" role="group" aria-label="경로에 넣을 지점">
-            <button className={`btn${!includeWarn ? " is-active" : ""}`} aria-pressed={!includeWarn} onClick={() => onIncludeWarn(false)}>
+            <button
+              className={`btn${!includeWarn ? " is-active" : ""}`}
+              aria-pressed={!includeWarn}
+              onClick={() => onIncludeWarn(false)}
+            >
               위험만
             </button>
-            <button className={`btn${includeWarn ? " is-active" : ""}`} aria-pressed={includeWarn} onClick={() => onIncludeWarn(true)}>
+            <button
+              className={`btn${includeWarn ? " is-active" : ""}`}
+              aria-pressed={includeWarn}
+              onClick={() => onIncludeWarn(true)}
+            >
               위험+주의
             </button>
           </span>
-          <button className={`btn${enabled ? " is-active" : " is-primary"}`} aria-pressed={enabled} onClick={() => onToggle(!enabled)}>
-            {enabled ? "경로 숨기기" : "경로 보기"}
-          </button>
         </div>
       </div>
 
-      {!enabled ? (
-        <p className="route-empty">수거가 필요한 지점을 도는 가장 빠른 순서와 실제 도로 경로를 지도에 표시합니다.</p>
-      ) : !data ? (
-        <p className="route-empty" role="status">경로 계산 중…</p>
+      <p className="route-empty route-intro">
+        수거가 필요한 지점을 {depotName}에서 출발해 도는 가장 빠른 순서와 도로 경로입니다. 상태가 바뀌면 자동으로 다시
+        계산합니다.
+      </p>
+      {!data ? (
+        <p className="route-empty" role="status">
+          경로 계산 중…
+        </p>
       ) : data.source === "empty" ? (
-        <p className="route-empty" role="status">지금은 수거할 지점이 없습니다.</p>
+        <p className="route-empty" role="status">
+          지금은 수거할 지점이 없습니다.
+        </p>
       ) : (
         <>
           <div className="route-summary" role="status">
@@ -64,7 +75,9 @@ export function RoutePanel({ enabled, onToggle, includeWarn, onIncludeWarn, rout
             {data.order.map((id, i) => (
               <li key={id} className="route-step">
                 <button className="route-stop" onClick={() => onSelect(id)}>
-                  <span className="route-no num" aria-hidden="true">{i + 1}</span>
+                  <span className="route-no num" aria-hidden="true">
+                    {i + 1}
+                  </span>
                   {nameOf.get(id) ?? id}
                 </button>
               </li>

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { countByState, sortByPriority, fmtAgo, fmtG, rssiLevel, toChartData, downsample, rainSegments, collectTargets, fmtDistance, fmtDuration } from "./format.js";
+import { countByState, sortByPriority, fmtAgo, fmtG, rssiLevel, toChartData, downsample, rainSegments, collectTargets, fmtDistance, fmtDuration, filterStations } from "./format.js";
 
 describe("downsample", () => {
   const pt = (ts, total, rain = 0) => ({ ts, left: total == null ? null : total / 2, right: total == null ? null : total / 2, total, rain });
@@ -114,5 +114,21 @@ describe("수거 경로 도우미", () => {
     expect(fmtDuration(720)).toBe("약 12분");
     expect(fmtDuration(3900)).toBe("약 1시간 5분");
     expect(fmtDuration(3600)).toBe("약 1시간");
+  });
+});
+
+describe("filterStations", () => {
+  const st = (id, real, state) => ({ id, real, judgement: { state } });
+  const list = [st("r", true, "warn"), st("a", false, "warn"), st("b", false, "normal")];
+  const ids = (o) => filterStations(list, o).map((s) => s.id);
+
+  it("실물/가상/전체", () => {
+    expect(ids({ source: "real" })).toEqual(["r"]);
+    expect(ids({ source: "virtual" })).toEqual(["a", "b"]);
+    expect(ids({})).toEqual(["r", "a", "b"]);
+  });
+  it("상태와 함께", () => {
+    expect(ids({ source: "virtual", state: "warn" })).toEqual(["a"]);
+    expect(ids({ state: "danger" })).toEqual([]);
   });
 });

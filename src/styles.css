@@ -313,6 +313,29 @@ button {
   }
 }
 
+/* 상세·수거 경로 페이지: 한 열 */
+.page {
+  display: grid;
+  gap: var(--sp-4);
+  padding: var(--sp-4) var(--sp-5) var(--sp-5);
+  min-width: 0;
+}
+@media (max-width: 1099px) {
+  .page {
+    padding: var(--sp-3);
+  }
+}
+.back-link {
+  justify-self: start;
+  color: var(--accent);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  text-decoration: none;
+}
+.back-link:hover {
+  text-decoration: underline;
+}
+
 /* ---------- 8. 상단바 · 시연 제어 ---------- */
 .sticky-head {
   position: sticky;
@@ -333,6 +356,7 @@ button {
 
 .topbar-title {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   gap: var(--sp-3);
   min-width: 0;
@@ -341,6 +365,26 @@ button {
   font-size: var(--fs-title);
   font-weight: 700;
   white-space: nowrap;
+}
+.topbar-nav {
+  display: inline-flex;
+  gap: var(--sp-1);
+  align-self: center;
+}
+.nav-link {
+  padding: 4px var(--sp-3);
+  border-radius: var(--radius-sm);
+  color: var(--text-sub);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  text-decoration: none;
+}
+.nav-link:hover {
+  background: var(--bg);
+}
+.nav-link.is-active {
+  color: var(--accent);
+  background: var(--accent-soft);
 }
 .topbar-clock {
   display: inline-flex;
@@ -620,6 +664,44 @@ button {
 .summary-cell.st-danger { color: var(--st-danger-text); background: var(--st-danger-bg); }
 .summary-cell.st-check { color: var(--st-check-text); background: var(--st-check-bg); }
 
+/* 상태 칸 = 필터 버튼 */
+button.summary-cell {
+  border: 2px solid transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: opacity var(--ease), border-color var(--ease);
+}
+button.summary-cell:hover {
+  border-color: currentColor;
+}
+.summary-cell.is-on {
+  border-color: currentColor;
+}
+.summary-cell.is-dim {
+  opacity: 0.45;
+}
+.summary-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+}
+.summary-title {
+  margin-bottom: 0;
+}
+.summary-all {
+  margin-top: var(--sp-2);
+  width: 100%;
+}
+.btn.btn-sm {
+  height: 28px;
+  padding: 0 var(--sp-2);
+  font-size: var(--fs-small);
+}
+
 /* ---------- 9-2. 수거 우선순위 ---------- */
 .prio-row {
   display: grid;
@@ -684,6 +766,15 @@ button {
   height: 400px;
   background: #e9edf2; /* 타일이 안 뜰 때 배경 */
   font-family: var(--font);
+}
+
+.map.is-tall {
+  height: 560px;
+}
+@media (max-width: 700px) {
+  .map.is-tall {
+    height: 420px;
+  }
 }
 
 /* divIcon 기본 흰 상자 제거 */
@@ -1225,4 +1316,8 @@ button {
   color: #fff;
   font-size: 11px;
   font-weight: 700;
+}
+
+.route-intro {
+  margin-bottom: var(--sp-3);
 }

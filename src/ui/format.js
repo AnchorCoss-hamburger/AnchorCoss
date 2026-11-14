@@ -156,3 +156,15 @@ export function fmtDuration(sec) {
   const m = min % 60;
   return `약 ${h}시간${m ? ` ${m}분` : ""}`;
 }
+
+/**
+ * 메인 화면 필터: source("all" | "real" | "virtual")와 state(null = 전체 상태)
+ * 실물 = 설정상 실물 센서 지점(real: true)
+ */
+export function filterStations(stations, { source = "all", state = null } = {}) {
+  return stations.filter(
+    (s) =>
+      (source === "all" || (source === "real") === Boolean(s.real)) &&
+      (state == null || s.judgement?.state === state),
+  );
+}

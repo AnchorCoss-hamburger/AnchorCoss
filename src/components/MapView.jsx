@@ -14,7 +14,15 @@ const MARKER_SIZE = 28;
 const LEGEND = [STATES.NORMAL, STATES.WARN, STATES.DANGER, STATES.CHECK];
 const SHORT = { normal: "정상", warn: "주의", danger: "위험", check: "점검 필요" };
 
-export function MapView({ stations, selectedId, onSelect, route = null, depot = null }) {
+export function MapView({
+  stations,
+  selectedId = null,
+  onSelect,
+  route = null,
+  depot = null,
+  tall = false,
+  label = "지점 지도",
+}) {
   const elRef = useRef(null);
   const ctxRef = useRef(null); // { L, map, markers: Map<id, L.Marker> }
   const onSelectRef = useRef(onSelect);
@@ -50,6 +58,15 @@ export function MapView({ stations, selectedId, onSelect, route = null, depot = 
     if (!ready || !ctx) return;
     const { L, map, markers } = ctx;
     const orderNo = new Map((route?.order ?? []).map((id, i) => [id, i + 1]));
+
+    // 필터로 빠진 지점의 마커는 지운다
+    const visible = new Set(stations.map((s) => s.id));
+    for (const [id, m] of markers) {
+      if (!visible.has(id)) {
+        m.remove();
+        markers.delete(id);
+      }
+    }
 
     for (const s of stations) {
       let m = markers.get(s.id);
@@ -115,7 +132,12 @@ export function MapView({ stations, selectedId, onSelect, route = null, depot = 
       ctx.routeLine.bringToBack();
     }
     ctx.depotMarker = L.marker([depot.lat, depot.lng], {
-      icon: L.divIcon({ className: "map-icon", html: '<div class="map-depot">출발</div>', iconSize: [40, 22], iconAnchor: [20, 11] }),
+      icon: L.divIcon({
+        className: "map-icon",
+        html: '<div class="map-depot">출발</div>',
+        iconSize: [40, 22],
+        iconAnchor: [20, 11],
+      }),
       keyboard: false,
       interactive: true,
       zIndexOffset: 1500,
@@ -134,8 +156,8 @@ export function MapView({ stations, selectedId, onSelect, route = null, depot = 
   }, [selectedId, ready]);
 
   return (
-    <section className="card map-card" aria-label="지점 지도">
-      <div ref={elRef} className="map" />
+    <section className="card map-card" aria-label={label}>
+      <div ref={elRef} className={`map${tall ? " is-tall" : ""}`} />
       {tilesFailed && (
         <p className="map-offline" role="status">
           지도 배경을 불러오지 못했습니다 (인터넷 확인) — 지점 마커와 선택은 정상 동작합니다.
