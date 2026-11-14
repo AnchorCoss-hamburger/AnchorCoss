@@ -66,7 +66,7 @@ export default function App() {
   const station = page.page === "station" ? (sim.stations.find((s) => s.id === page.id) ?? null) : null;
 
   return (
-    <div className="app">
+    <div className={`app${page.page === "main" || page.page === "route" ? " is-fit" : ""}`}>
       {/* 상단바 + 위험 배너는 스크롤해도 위에 고정 */}
       <div className="sticky-head">
         <TopBar
@@ -116,7 +116,7 @@ export default function App() {
       )}
 
       {page.page === "route" && (
-        <main className="page">
+        <main className="page route-page">
           <MapView
             stations={sim.stations}
             onSelect={openStation}

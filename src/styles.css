@@ -1349,28 +1349,58 @@ button.summary-cell:hover {
   border-bottom-color: var(--accent);
 }
 
-/* ---------- 메인: 지도 높이를 왼쪽 열(요약 + 목록)에 맞춤 ---------- */
-@media (min-width: 1100px) {
-  .layout-main {
-    align-self: stretch;
+/* ---------- 메인: 한 화면에 맞춤 (넓고 충분히 높은 화면) ----------
+   상단바·배너를 뺀 남은 높이를 왼쪽 열(요약 + 목록)과 지도가 나눠 쓴다.
+   목록이 길면 카드 안에서 스크롤, 화면이 너무 낮으면 예전처럼 페이지 스크롤. */
+@media (min-width: 1100px) and (min-height: 620px) {
+  .app.is-fit {
+    height: 100vh;
+    height: 100dvh;
   }
-  .layout-main .map-card {
+  .app.is-fit .layout {
+    min-height: 0;
+    align-items: stretch;
+  }
+  .app.is-fit .layout-side {
+    grid-template-rows: auto minmax(0, 1fr);
+    min-height: 0;
+  }
+  .app.is-fit .prio-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .app.is-fit .prio-card .plain-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    margin-right: calc(-1 * var(--sp-2));
+    padding-right: var(--sp-2);
+  }
+  .app.is-fit .layout-main {
+    min-height: 0;
+  }
+  .app.is-fit .map-card {
     height: 100%;
     display: flex;
     flex-direction: column;
   }
-  .layout-main .map {
+  .app.is-fit .map {
     flex: 1;
     height: auto;
-    min-height: 480px;
+    min-height: 0;
   }
-  /* 목록이 길면 카드 안에서 스크롤 */
-  .prio-card .plain-list {
-    max-height: calc(100vh - 360px);
-    min-height: 240px;
+  /* 수거 경로 페이지: 왼쪽 지도(남은 높이 전부) + 오른쪽 경로 패널 */
+  .app.is-fit .route-page {
+    flex: 1;
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr) 380px;
+    grid-template-rows: minmax(0, 1fr);
+    align-items: stretch;
+  }
+  .app.is-fit .route-page .route-card {
+    min-height: 0;
     overflow-y: auto;
-    margin-right: calc(-1 * var(--sp-2));
-    padding-right: var(--sp-2);
   }
 }
 
