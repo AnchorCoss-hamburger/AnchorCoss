@@ -1,6 +1,7 @@
 // 지점 상세 (DESIGN.md 5장 DrainDetail)
-// 머리: 이름·상태·플래그·조작 / 숫자 카드 한 줄 / 게이지 | 중량 그래프(예측선) / 상태 비율 | 우천 영향
-// / 판정 근거·통신 | 상태 전환 기록 | 지점 정보·미니 지도
+// 머리: 돌아가기·이름·상태·조작
+// 왼쪽 좁은 열: 로드셀 게이지 · 지점 정보(미니 지도)
+// 오른쪽 넓은 열: 숫자 카드 · 중량 그래프(예측선) · 판정 근거·통신 | 상태 비율 | 우천 영향 | 상태 전환 기록
 import { StateBadge, FlagTags } from "./StateBadge.jsx";
 import { LoadCellGauge } from "./LoadCellGauge.jsx";
 import { WeightChart } from "./WeightChart.jsx";
@@ -110,7 +111,7 @@ function RainCompare({ history }) {
   );
 }
 
-export function DrainDetail({ station, now, onCollect, onScenario }) {
+export function DrainDetail({ station, now, onCollect, onScenario, backHref = null }) {
   if (!station) {
     return (
       <section className="card">
@@ -145,6 +146,11 @@ export function DrainDetail({ station, now, onCollect, onScenario }) {
   return (
     <section className={`card detail is-${j.state}`} aria-label={`${station.name} 상세`}>
       <div className="detail-head">
+        {backHref && (
+          <a className="back-link btn btn-sm" href={backHref}>
+            ← 대시보드
+          </a>
+        )}
         <h2 className="detail-name">{station.name}</h2>
         <StateBadge state={j.state} pending={j.pending} pulse />
         <FlagTags flags={j.flags} />
@@ -184,97 +190,99 @@ export function DrainDetail({ station, now, onCollect, onScenario }) {
         </div>
       </div>
 
-      {/* 숫자 카드 한 줄 */}
-      <dl className="detail-stats">
-        <div className="stat is-main">
-          <dt>총 중량</dt>
-          <dd className="num">{fmtG(m.totalG)}</dd>
-        </div>
-        <div className="stat">
-          <dt>수거 단계</dt>
-          <dd className="num">{fmtStage(m.stage)}</dd>
-        </div>
-        <div className="stat">
-          <dt>막힘 점수</dt>
-          <dd className={`num tx-${j.state}`}>{j.score ?? "—"}</dd>
-        </div>
-        <div className="stat">
-          <dt>증가 속도</dt>
-          <dd className="num">{fmtRate(m.rateGPerMin)}</dd>
-        </div>
-        <div className="stat" title="현재 증가 속도가 이어진다고 가정한 예상">
-          <dt>수거 기준 도달 예상</dt>
-          <dd
-            className={`num${eta.kind === "over" ? " tx-danger" : eta.kind === "eta" && eta.minutes <= 30 ? " tx-warn" : ""}`}
-          >
-            {etaLabel}
-            {eta.kind === "eta" && station.latest && (
-              <span className="stat-sub"> ({fmtHM(station.latest.ts + eta.minutes * 60000)})</span>
-            )}
-          </dd>
-        </div>
-        <div className="stat">
-          <dt>강우</dt>
-          <dd className="num">{rain == null ? "—" : `${rain}mm/h`}</dd>
-        </div>
-        <div className="stat">
-          <dt>마지막 수신</dt>
-          <dd className={`num${j.state === STATES.CHECK ? " tx-check" : ""}`}>{fmtAgo(clock, station.latest?.ts)}</dd>
-        </div>
-      </dl>
-
-      {/* 게이지 | 그래프 */}
-      <div className="detail-row is-chart">
-        <div className="detail-block">
-          <h3 className="block-title">로드셀</h3>
-          <LoadCellGauge sample={station.latest} metrics={j.metrics} state={j.state} />
-        </div>
-        <div className="detail-block">
-          <h3 className="block-title">중량 변화 (최근 1시간)</h3>
-          <WeightChart history={station.history} transitions={station.transitions} forecast={forecast} />
-        </div>
-      </div>
-
-      {/* 최근 1시간 상태 비율 | 우천 영향 */}
-      <div className="detail-row is-half">
-        <div className="detail-block">
-          <h3 className="block-title">최근 1시간 상태 비율</h3>
-          <StateShare station={station} clock={clock} />
-        </div>
-        <div className="detail-block">
-          <h3 className="block-title">비가 올 때 쌓이는 속도</h3>
-          <RainCompare history={station.history} />
-        </div>
-      </div>
-
-      {/* 판정 근거·통신 | 상태 전환 기록 | 지점 정보 */}
-      <div className="detail-row is-three">
-        <div className="detail-block detail-info">
-          <div>
-            <h3 className="block-title">판정 근거</h3>
-            <ul className="reason-list">
-              {j.reason.map((r) => (
-                <li key={r}>
-                  <Emph text={r} />
-                </li>
-              ))}
-            </ul>
+      <div className="detail-grid">
+        {/* 왼쪽 좁은 열: 게이지 · 지점 정보 */}
+        <aside className="detail-side">
+          <div className="panel">
+            <h3 className="block-title">로드셀</h3>
+            <LoadCellGauge sample={station.latest} metrics={j.metrics} state={j.state} />
           </div>
-          {/* 실물 지점은 유선·외부 전원이라 신호·배터리가 없고, 마지막 수신은 위 숫자 카드에 있다 */}
-          {!station.real && (
-            <div>
-              <h3 className="block-title">통신 상태</h3>
-              <CommStatus station={station} now={now} showLast={false} />
+          <div className="panel">
+            <h3 className="block-title">지점 정보</h3>
+            <StationInfo station={station} />
+          </div>
+        </aside>
+
+        {/* 오른쪽 넓은 열: 숫자 카드 · 그래프 · 판정 근거 | 상태 비율 | 우천 영향 | 상태 전환 기록 */}
+        <div className="detail-main">
+          <dl className="detail-stats">
+            <div className="stat is-main">
+              <dt>총 중량</dt>
+              <dd className="num">{fmtG(m.totalG)}</dd>
             </div>
-          )}
-        </div>
-        <div className="detail-block">
-          <h3 className="block-title">상태 전환 기록</h3>
-          <Timeline transitions={station.transitions} />
-        </div>
-        <div className="detail-block">
-          <h3 className="block-title">지점 정보</h3>
-          <StationInfo station={station} />
+            <div className="stat">
+              <dt>수거 단계</dt>
+              <dd className="num">{fmtStage(m.stage)}</dd>
+            </div>
+            <div className="stat">
+              <dt>막힘 점수</dt>
+              <dd className={`num tx-${j.state}`}>{j.score ?? "—"}</dd>
+            </div>
+            <div className="stat">
+              <dt>증가 속도</dt>
+              <dd className="num">{fmtRate(m.rateGPerMin)}</dd>
+            </div>
+            <div className="stat" title="현재 증가 속도가 이어진다고 가정한 예상">
+              <dt>수거 기준 도달 예상</dt>
+              <dd
+                className={`num${eta.kind === "over" ? " tx-danger" : eta.kind === "eta" && eta.minutes <= 30 ? " tx-warn" : ""}`}
+              >
+                {etaLabel}
+                {eta.kind === "eta" && station.latest && (
+                  <span className="stat-sub"> ({fmtHM(station.latest.ts + eta.minutes * 60000)})</span>
+                )}
+              </dd>
+            </div>
+            <div className="stat">
+              <dt>강우</dt>
+              <dd className="num">{rain == null ? "—" : `${rain}mm/h`}</dd>
+            </div>
+            <div className="stat">
+              <dt>마지막 수신</dt>
+              <dd className={`num${j.state === STATES.CHECK ? " tx-check" : ""}`}>
+                {fmtAgo(clock, station.latest?.ts)}
+              </dd>
+            </div>
+          </dl>
+          <div className="panel">
+            <h3 className="block-title">중량 변화 (최근 1시간)</h3>
+            <WeightChart history={station.history} transitions={station.transitions} forecast={forecast} />
+          </div>
+          <div className="detail-row is-four">
+            <div className="panel detail-info">
+              <div>
+                <h3 className="block-title">판정 근거</h3>
+                <ul className="reason-list">
+                  {j.reason.map((r) => (
+                    <li key={r}>
+                      <Emph text={r} />
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              {/* 실물 지점은 유선·외부 전원이라 신호·배터리가 없고, 마지막 수신은 숫자 카드에 있다 */}
+              {!station.real && (
+                <div>
+                  <h3 className="block-title">통신 상태</h3>
+                  <CommStatus station={station} now={now} showLast={false} />
+                </div>
+              )}
+            </div>
+            <div className="panel">
+              <h3 className="block-title">최근 1시간 상태 비율</h3>
+              <StateShare station={station} clock={clock} />
+            </div>
+            <div className="panel">
+              <h3 className="block-title">비가 올 때 쌓이는 속도</h3>
+              <RainCompare history={station.history} />
+            </div>
+            <div className="panel">
+              <h3 className="block-title">상태 전환 기록</h3>
+              <div className="panel-scroll">
+                <Timeline transitions={station.transitions} />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>

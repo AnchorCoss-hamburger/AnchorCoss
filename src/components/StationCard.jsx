@@ -35,7 +35,7 @@ function etaText(m, state) {
   return { text: "계산 중", sub: "증가 속도를 구하려면 5분 이상 데이터가 필요", tone: null };
 }
 
-const SPARK_H = 56;
+const SPARK_H = 44;
 
 /** 최근 총 중량 추세 (선 하나 + 주의·수거 기준 점선만) */
 function Sparkline({ history, state }) {
@@ -126,7 +126,7 @@ export function StationCard({ station, now: simNow, onClose, onDetail }) {
         );
       })()}
 
-      <section className="station-card-sec" aria-label="최근 상태 변화">
+      <section className="station-card-sec is-recent" aria-label="최근 상태 변화">
         <h3>최근 상태 변화</h3>
         {station.transitions.length === 0 ? (
           <p className="station-card-sub">아직 변화 없음</p>

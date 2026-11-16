@@ -120,13 +120,19 @@ export default function App() {
 
       {page.page === "station" && (
         <main className="page is-narrow">
-          <a className="back-link btn" href={paths.main()}>
-            ← 대시보드로
-          </a>
           {station ? (
-            <DrainDetail station={station} now={sim.now} onCollect={sim.collect} onScenario={sim.setScenario} />
+            <DrainDetail
+              station={station}
+              now={sim.now}
+              onCollect={sim.collect}
+              onScenario={sim.setScenario}
+              backHref={paths.main()}
+            />
           ) : (
             <section className="card">
+              <a className="back-link btn btn-sm" href={paths.main()}>
+                ← 대시보드
+              </a>
               <p className="muted">지점을 찾을 수 없습니다 ({page.id}).</p>
             </section>
           )}

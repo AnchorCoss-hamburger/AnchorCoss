@@ -38,7 +38,9 @@ export function WeightChart({ history, transitions, forecast = null }) {
 
   return (
     <div className="chart">
-      <ResponsiveContainer width="100%" height={240}>
+      {/* 높이는 CSS(.chart-box)가 정한다 — 낮은 화면에서는 줄임 */}
+      <div className="chart-box">
+      <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
           <CartesianGrid stroke={COLORS.grid} vertical={false} />
           {rain.map((seg) => (
@@ -75,6 +77,7 @@ export function WeightChart({ history, transitions, forecast = null }) {
           )}
         </LineChart>
       </ResponsiveContainer>
+      </div>
       <ul className="chart-legend">
         <li><span className="swatch is-thick" style={{ background: COLORS.total }} />총 중량</li>
         {forecast && <li><span className="swatch is-dashed" />예측 (현재 속도 기준)</li>}
