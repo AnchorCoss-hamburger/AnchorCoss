@@ -14,6 +14,7 @@
     "test": "vitest run",
     "scenario": "node scripts/print-scenario.js",
     "fake-sensor": "node scripts/fake-sensor.js",
+    "serial": "node scripts/serial-bridge.js",
     "db:reset": "node scripts/db-reset.js"
   },
   "dependencies": {
@@ -26,5 +27,8 @@
     "@vitejs/plugin-react": "^5.2.0",
     "vite": "^7.3.7",
     "vitest": "^3.2.7"
+  },
+  "optionalDependencies": {
+    "serialport": "^13.0.0"
   }
 }

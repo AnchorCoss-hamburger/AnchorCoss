@@ -34,6 +34,7 @@ npm run build     # 배포용 빌드 (dist/)
 npm run preview   # 빌드 결과 미리보기
 npm run dev:host  # 같은 와이파이의 다른 기기(센서)에서 접속 가능하게 실행
 npm run fake-sensor # 센서 흉내: 수신 API로 샘플 전송 (npm run dev 실행 중일 때)
+npm run serial    # 시리얼 브리지: 아두이노 USB 시리얼 값 → 수신 API (아래 "시리얼 브리지")
 npm run db:reset  # 센서 DB 비우기 (-- --yes 로 실제 삭제, 개발 서버를 끄고 실행)
 npm run scenario  # 판정 성능 비교표 (제안 방식 vs 단순 임계값)
                   # 예: npm run scenario -- gradual 1  (특정 시나리오 상세, 1분 간격)
@@ -84,11 +85,45 @@ POST /api/sensor-data
 - 같은 지점·시각·값의 재전송은 중복으로 무시
 - 조회: `GET /api/stations` (지점 목록), `GET /api/stations?id=st-1&since=<ms>` 또는 `&afterId=<n>`
 
-**하드웨어와 연결할 때**
-1. `npm run dev:host`로 실행 → 터미널에 표시되는 `Network: http://<노트북IP>:5173` 주소를 하드웨어팀에 전달
+## 시리얼 브리지 (아두이노 USB 연결)
+
+지금 하드웨어는 로드셀 2개 → HX711 하나 → Arduino Uno → **USB로 노트북**에 연결되고, 시리얼 모니터에 총 중량 값 하나가 찍힌다.
+`npm run serial`이 그 값을 읽어 수신 API로 보낸다. 대시보드와 **같은 노트북**에서 실행한다 (와이파이·토큰 전달 불필요).
+
+처음 한 번: `npm install` (시리얼 통신 패키지 `serialport` 설치)
+
+1. 아두이노 IDE의 **시리얼 모니터를 닫는다** (켜져 있으면 포트를 쓸 수 없음)
+2. 터미널 1: `npm run dev`, 브라우저에서 상단바 **실시간** 모드
+3. 터미널 2: 포트 확인 후 실행
+
+```bash
+npm run serial -- --list
+```
+
+```bash
+npm run serial -- --port COM5 --baud 9600 --tare auto
+```
+
+| 옵션 | 기본값 | 설명 |
+|---|---|---|
+| `--port` | 자동 | 아두이노 포트 (Windows는 `COM3`처럼). 자동 찾기가 안 되면 `--list`로 확인 |
+| `--baud` | 9600 | 보드레이트. 아두이노 코드의 `Serial.begin(…)` 값과 같아야 함 (다르면 글자가 깨짐) |
+| `--tare` | 0 | 영점(g). `auto`면 시작 후 10개 값의 중앙값 — **거름망을 비운 상태로 시작**. 화면에 나온 값을 다음부터 `--tare 350`처럼 재사용 |
+| `--scale` | 1 | 단위 배율. 아두이노가 kg로 찍으면 `1000` |
+| `--neg-tol` | 150 | 영점 근처 잡음으로 생긴 작은 음수(이 값 미만)는 0으로 보냄. 판정은 음수를 센서 이상으로 보기 때문 |
+| `--station` | st-1 | 보낼 지점 ID |
+| `--stdin` | — | 하드웨어 없이 시험: 키보드로 한 줄씩 입력 (`Weight: 599.5 g` 등) |
+
+- 줄 해석: 한 줄에서 **첫 번째 숫자**를 무게로 쓴다 (`599.5`, `Weight: 599.5 g` 모두 가능, `HX711` 같은 글자에 붙은 숫자는 무시). `error`·`fail`·`오류` 같은 문구는 센서 이상(null)으로 보낸다 (`lib/serial.js`)
+- 1초마다 모아서 보내고, 서버가 꺼져 있으면 쌓아 뒀다가 다시 보낸다
+- 하드웨어 출력 형식(보드레이트, 한 줄 모양, 단위, 영점 여부)은 합동 테스트 때 확인해서 위 옵션으로 맞춘다
+
+**와이파이로 직접 보낼 때 (향후 ESP32)**
+1. `npm run dev:host`로 실행 → 터미널에 표시되는 `Network: http://<노트북IP>:5173` 주소와 `DEVICE_TOKEN`을 하드웨어팀에 전달
 2. 노트북과 센서가 같은 와이파이(또는 노트북 핫스팟)에 있어야 함. Windows 방화벽에서 Node.js 접근 허용
 3. 상단바에서 **실시간** 모드로 전환
-4. 테스트 데이터(`npm run fake-sensor`)는 같은 DB에 쌓이므로, 발표·합동 테스트 전에 `npm run db:reset -- --yes`로 비울 것
+
+테스트 데이터(`npm run fake-sensor`, `npm run serial -- --stdin`)는 같은 DB에 쌓이므로, 발표·합동 테스트 전에 `npm run db:reset -- --yes`로 비울 것
 
 ## 페이지
 
@@ -115,8 +150,8 @@ POST /api/sensor-data
 api/            API 핸들러 (weather: 기상청 프록시, sensor-data: 센서 수신, stations: 이력 조회, route: 수거 경로)
 server/         SQLite 저장소(db.js)·수신 검증(ingest.js)·공통 도우미(http.js)
 data/           SQLite 파일 (git 제외)
-lib/            기상청 API 호출·파싱·위경도→격자 변환 (kma.js), 수거 경로 계산 (route.js)
-scripts/        시나리오 출력 등 보조 스크립트
+lib/            기상청 API 호출·파싱·위경도→격자 변환 (kma.js), 수거 경로 계산 (route.js), 시리얼 줄 해석·영점 (serial.js)
+scripts/        시나리오 출력, 센서 흉내, 시리얼 브리지 등 보조 스크립트
 public/         정적 파일
 src/
   components/   화면 컴포넌트 (TopBar, ScenarioControls, Summary, PriorityList, MapView, DrainDetail, LoadCellGauge, WeightChart, CommStatus, Timeline, Toasts, StateBadge)
@@ -143,8 +178,8 @@ src/
 - [ ] 센서 정격·기준값 반영 (하드웨어팀 전달 예정)
 - [x] 지점 15곳(충북대 주변 임시 좌표) + 수거 경로(OSRM, 저장분·직선 대체) (`lib/route.js`, `api/route.js`, `RoutePanel`)
 - [x] 페이지 분할(대시보드·지점 상세·수거 경로), 상태·실물/가상 필터, 실물 지점 신호·배터리 숨김 (`src/ui/router.js`)
-- [ ] USB 시리얼 브리지 (Uno 시리얼 출력 → `POST /api/sensor-data`, 시리얼 출력 형식 확정 후)
-- [ ] 영점(뜰채·뚜껑 무게) 처리 방식 결정 — 보류
+- [x] USB 시리얼 브리지 (`npm run serial`, `scripts/serial-bridge.js`, `lib/serial.js`) — 출력 형식은 가정(한 줄에 숫자), 합동 테스트 때 옵션으로 맞춤
+- [x] 영점 빼기 (`--tare auto` / `--tare <g>`, 브리지에서 처리) — 하드웨어가 영점을 맞춰 보내면 `--tare 0`
 - [ ] 판정 결과 서버 저장·일자별 통계 (후속)
 
 ## 배포
