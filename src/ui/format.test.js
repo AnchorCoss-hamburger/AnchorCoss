@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { countByState, sortByPriority, fmtAgo, fmtG, rssiLevel, toChartData, downsample, rainSegments, collectTargets, fmtDistance, fmtDuration, filterStations, fmtTime, sparkPath } from "./format.js";
+import { countByState, sortByPriority, fmtAgo, fmtG, rssiLevel, toChartData, downsample, rainSegments, collectTargets, fmtDistance, fmtDuration, filterStations, fmtTime, sparkPath, fmtStage } from "./format.js";
 
 describe("downsample", () => {
-  const pt = (ts, total, rain = 0) => ({ ts, left: total == null ? null : total / 2, right: total == null ? null : total / 2, total, rain });
+  const pt = (ts, total, rain = 0) => ({ ts, total, rain });
 
   it("점이 적으면 그대로", () => {
     const d = [pt(0, 1), pt(1, 2)];
@@ -36,16 +36,15 @@ describe("rssiLevel", () => {
 });
 
 describe("toChartData / rainSegments", () => {
-  const smp = (ts, leftG, rightG, rainMm = 0) => ({ ts, leftG, rightG, rainMm });
+  const smp = (ts, weightG, rainMm = 0) => ({ ts, weightG, rainMm });
 
-  it("합계 계산, 센서 이상값은 null", () => {
-    const d = toChartData([smp(0, 100, 50), smp(10_000, 100, -300), smp(20_000, null, 50)]);
-    expect(d.map((x) => x.total)).toEqual([150, null, null]);
-    expect(d[1]).toMatchObject({ left: 100, right: null });
+  it("총 중량, 센서 이상값(음수·null·범위 초과)은 null", () => {
+    const d = toChartData([smp(0, 150), smp(10_000, -300), smp(20_000, null), smp(30_000, 9000)], { maxG: 2400 });
+    expect(d.map((x) => x.total)).toEqual([150, null, null, null]);
   });
 
   it("수신이 끊긴 구간에 null 점을 넣는다", () => {
-    const d = toChartData([smp(0, 1, 1), smp(10_000, 1, 1), smp(600_000, 1, 1)]);
+    const d = toChartData([smp(0, 2), smp(10_000, 2), smp(600_000, 2)]);
     expect(d).toHaveLength(4);
     expect(d[2].total).toBeNull();
   });
@@ -153,5 +152,13 @@ describe("sparkPath", () => {
   });
   it("값이 없으면 빈 경로", () => {
     expect(sparkPath([{ ts: 0, total: null }], opt)).toEqual({ line: "", area: "" });
+  });
+});
+
+describe("fmtStage", () => {
+  it("수거 단계 표시", () => {
+    expect(fmtStage(0)).toBe("1단계 미만");
+    expect(fmtStage(3)).toBe("3단계");
+    expect(fmtStage(null)).toBe("—");
   });
 });

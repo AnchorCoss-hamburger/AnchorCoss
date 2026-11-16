@@ -36,8 +36,6 @@
   --st-check-text: #4b5563;
 
   /* 차트 */
-  --chart-left: #2563eb;
-  --chart-right: #0d9488;
   --chart-total: #1c2430;
   --chart-rain: #dbeafe;
 
@@ -936,10 +934,6 @@ button.summary-cell:hover {
 .stat.is-main dd {
   font-size: 22px;
 }
-.stat-sep {
-  color: var(--text-mute);
-  font-weight: 400;
-}
 .detail-row {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
@@ -1000,24 +994,11 @@ button.summary-cell:hover {
   position: relative;
   height: 150px;
   display: flex;
-  justify-content: space-around;
-}
-.gauge-labels {
-  display: flex;
-  justify-content: space-around;
-  margin-top: 4px;
-  font-size: var(--fs-small);
-  font-weight: 700;
-  color: var(--text-sub);
-}
-.gauge-labels span {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+  justify-content: center;
 }
 .gauge-track {
   position: relative;
-  width: 44px;
+  width: 72%; /* 거름망 안쪽 폭 — 쓰레기가 차오르는 모양 */
   height: 100%;
   border-radius: 6px 6px 4px 4px;
   background: var(--st-check-bg);
@@ -1044,15 +1025,6 @@ button.summary-cell:hover {
   color: var(--st-check-text);
   font-size: 12px;
   font-weight: 700;
-}
-.gauge-heavy {
-  padding: 0 6px;
-  border-radius: 4px;
-  background: var(--text);
-  color: #fff;
-  font-size: 11px;
-  font-style: normal;
-  white-space: nowrap;
 }
 /* 기준선: .gauge-tracks 기준 bottom % (막대 높이와 같은 척도) */
 .gauge-line {
@@ -1093,7 +1065,7 @@ button.summary-cell:hover {
 
 .gauge-values {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   font-size: var(--fs-small);
   color: var(--text-sub);
 }

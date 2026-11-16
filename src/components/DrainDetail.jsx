@@ -6,7 +6,7 @@ import { WeightChart } from "./WeightChart.jsx";
 import { CommStatus } from "./CommStatus.jsx";
 import { Timeline } from "./Timeline.jsx";
 import { SCENARIOS } from "../sim/scenario.js";
-import { fmtG, fmtAgo } from "../ui/format.js";
+import { fmtG, fmtAgo, fmtStage } from "../ui/format.js";
 import { STATES } from "../logic/states.js";
 
 /** 근거 문장의 숫자(1,234g, 80%, 7분 등)를 굵게 */
@@ -84,10 +84,8 @@ export function DrainDetail({ station, now, onCollect, onScenario }) {
           <dd className="num">{fmtG(m.totalG)}</dd>
         </div>
         <div className="stat">
-          <dt>좌 / 우</dt>
-          <dd className="num">
-            {fmtG(m.leftG)} <span className="stat-sep">/</span> {fmtG(m.rightG)}
-          </dd>
+          <dt>수거 단계</dt>
+          <dd className="num">{fmtStage(m.stage)}</dd>
         </div>
         <div className="stat">
           <dt>막힘 점수</dt>
@@ -111,7 +109,7 @@ export function DrainDetail({ station, now, onCollect, onScenario }) {
       <div className="detail-row is-chart">
         <div className="detail-block">
           <h3 className="block-title">로드셀</h3>
-          <LoadCellGauge sample={station.latest} metrics={j.metrics} state={j.state} flags={j.flags} />
+          <LoadCellGauge sample={station.latest} metrics={j.metrics} state={j.state} />
         </div>
         <div className="detail-block">
           <h3 className="block-title">중량 변화 (최근 1시간)</h3>

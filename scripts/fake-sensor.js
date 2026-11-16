@@ -3,7 +3,7 @@
 //
 // 사용: npm run dev  (다른 터미널에서)
 //       npm run fake-sensor                              기본: st-1, 서서히 누적, 5초 간격, 12배속
-//       npm run fake-sensor -- --scenario imbalance      시나리오 선택 (normal, gradual, imbalance, rainSurge, collect, commDrop, sensorFault, spike)
+//       npm run fake-sensor -- --scenario plateau        시나리오 선택 (normal, gradual, plateau, rainSurge, collect, commDrop, sensorFault, spike)
 //       npm run fake-sensor -- --interval 2 --speed 30   2초마다, 시나리오 30배속
 //       npm run fake-sensor -- --url http://192.168.0.10:5173 --count 10
 //
@@ -57,8 +57,7 @@ async function once() {
   const body = {
     stationId: station,
     ts: Date.now(),
-    leftG: sample.leftG,
-    rightG: sample.rightG,
+    weightG: sample.weightG,
     rssi: sample.rssi,
     batteryPct: sample.batteryPct,
   };
@@ -70,7 +69,7 @@ async function once() {
     });
     const j = await r.json().catch(() => ({}));
     const note = r.ok ? `저장 ${j.accepted}건` : `실패 ${r.status} ${j.error ?? ""}`;
-    console.log(`${tag} 좌 ${String(body.leftG).padStart(5)}g  우 ${String(body.rightG).padStart(5)}g  → ${note}`);
+    console.log(`${tag} 총 중량 ${String(body.weightG).padStart(5)}g  → ${note}`);
   } catch (e) {
     const refused = e.cause?.code === "ECONNREFUSED";
     console.log(`${tag} 전송 실패: ${refused ? "서버가 꺼져 있습니다 (npm run dev 확인)" : e.message}`);

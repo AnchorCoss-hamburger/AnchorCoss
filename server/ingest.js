@@ -1,7 +1,8 @@
 // 센서 수신 데이터 검증·정규화. 하드웨어 규격이 바뀌면 여기(입구)만 고친다.
 //
 // 받는 형식 (객체 1건 또는 배열):
-//   { stationId: "st-1", ts?: epoch(ms 또는 초), leftG: number|null, rightG: number|null, rssi?: number, batteryPct?: number }
+//   { stationId: "st-1", ts?: epoch(ms 또는 초), weightG: number|null, rssi?: number, batteryPct?: number }
+//   weightG = 총 중량(g). 로드셀 2개를 HX711 하나로 합쳐 읽으므로 값은 하나다.
 // - 숫자 문자열("312")도 받는다 (펌웨어 편의)
 // - 음수·범위 초과 같은 "센서 이상값"은 거절하지 않고 그대로 저장한다 → 판정에서 점검 필요로 처리
 // - 형식 오류(숫자가 아님, 필수 필드 없음)만 거절한다
@@ -29,12 +30,12 @@ export function normalizeSample(raw, { receivedAt, rainMm = null }) {
   if (typeof stationId !== "string" || !/^[\w-]{1,32}$/.test(stationId)) {
     return { error: "stationId: 영문·숫자·_·- 1~32자" };
   }
-  if (!("leftG" in raw) || !("rightG" in raw)) {
-    return { error: "leftG, rightG가 필요합니다 (채널 누락은 null)" };
+  if (!("weightG" in raw)) {
+    return { error: "weightG가 필요합니다 (측정 실패는 null)" };
   }
 
   const fields = {};
-  for (const [key, opt] of [["leftG"], ["rightG"], ["rssi", { int: true }], ["batteryPct", { int: true }]]) {
+  for (const [key, opt] of [["weightG"], ["rssi", { int: true }], ["batteryPct", { int: true }]]) {
     const r = toNum(raw[key], key, opt);
     if (r.err) return { error: r.err };
     fields[key] = r.v;

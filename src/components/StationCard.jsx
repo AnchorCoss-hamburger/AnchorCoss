@@ -2,7 +2,7 @@
 // 가벼운 정보만 보여 주고, 그래프·타임라인 등은 "상세 보기"로 지점 상세 페이지에서 본다.
 
 import { StateBadge, FlagTags } from "./StateBadge.jsx";
-import { fmtAgo, fmtG, toChartData, downsample, sparkPath } from "../ui/format.js";
+import { fmtAgo, fmtG, fmtStage, toChartData, downsample, sparkPath } from "../ui/format.js";
 import { STATES } from "../logic/states.js";
 import { TH } from "../config.js";
 
@@ -70,12 +70,8 @@ export function StationCard({ station, now: simNow, onClose, onDetail }) {
           </dd>
         </div>
         <div>
-          <dt>좌</dt>
-          <dd className="num">{fmtG(m.leftG)}</dd>
-        </div>
-        <div>
-          <dt>우</dt>
-          <dd className="num">{fmtG(m.rightG)}</dd>
+          <dt>수거 단계</dt>
+          <dd className="num">{fmtStage(m.stage)}</dd>
         </div>
         <div>
           <dt>막힘 점수</dt>
@@ -85,7 +81,7 @@ export function StationCard({ station, now: simNow, onClose, onDetail }) {
           <dt>강우</dt>
           <dd className="num">{rain == null ? "—" : `${rain}mm/h`}</dd>
         </div>
-        <div className="is-wide">
+        <div>
           <dt>마지막 수신</dt>
           <dd className={`num${j.state === STATES.CHECK ? " tx-check" : ""}`}>{fmtAgo(now, station.latest?.ts)}</dd>
         </div>

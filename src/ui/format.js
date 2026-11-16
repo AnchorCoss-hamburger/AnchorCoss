@@ -78,11 +78,9 @@ export function toChartData(history, { gapMs = 30_000, maxG = 5000 } = {}) {
     const s = history[i];
     const prev = history[i - 1];
     if (prev && s.ts - prev.ts > gapMs) {
-      out.push({ ts: prev.ts + 1, left: null, right: null, total: null, rain: prev.rainMm });
+      out.push({ ts: prev.ts + 1, total: null, rain: prev.rainMm });
     }
-    const l = valid(s.leftG, maxG) ? s.leftG : null;
-    const r = valid(s.rightG, maxG) ? s.rightG : null;
-    out.push({ ts: s.ts, left: l, right: r, total: l != null && r != null ? l + r : null, rain: s.rainMm });
+    out.push({ ts: s.ts, total: valid(s.weightG, maxG) ? s.weightG : null, rain: s.rainMm });
   }
   return out;
 }
@@ -110,8 +108,6 @@ export function downsample(data, maxPoints) {
     .sort((a, b) => a[0] - b[0])
     .map(([, arr]) => ({
       ts: arr[Math.floor(arr.length / 2)].ts,
-      left: mean(arr, "left"),
-      right: mean(arr, "right"),
       total: mean(arr, "total"),
       rain: Math.max(...arr.map((x) => x.rain ?? 0)),
     }));
@@ -201,4 +197,10 @@ export function sparkPath(points, { width, height, maxG }) {
   }
   flush();
   return { line, area };
+}
+
+/** 하드웨어 수거 단계 표시: 0 → "1단계 미만", 2 → "2단계", null → "—" */
+export function fmtStage(stage) {
+  if (stage == null) return "—";
+  return stage === 0 ? "1단계 미만" : `${stage}단계`;
 }

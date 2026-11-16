@@ -29,8 +29,8 @@ describe("engine", () => {
     const evs = run(e, 60 * 6); // 60분
     expect(evs.length).toBeGreaterThan(0);
     expect(evs[0]).toMatchObject({ stationId: expect.any(String), from: expect.any(String), to: expect.any(String) });
-    const st3 = e.snapshot().stations.find((s) => s.id === "st-3"); // imbalance
-    expect(st3.transitions[0].to).toBe(STATES.DANGER); // 최신순
+    const st3 = e.snapshot().stations.find((s) => s.id === "st-3"); // plateau (중간 적재)
+    expect(st3.transitions[0].to).toBe(STATES.WARN); // 최신순
   });
 
   it("이력은 historyLimit까지만 보관, 통신 두절 구간은 이력에 없다", () => {
@@ -80,7 +80,7 @@ describe("engine", () => {
       const e = createEngine({ sim: createSimulator({ seed: 1, startTs: 0 }), wallClock: () => wall });
       return { e, advanceWall: (ms) => (wall += ms), wall: () => wall };
     }
-    const real = (ts, leftG, rightG = leftG) => ({ stationId: "st-1", ts, leftG, rightG, rainMm: 0, rssi: -60, batteryPct: 90 });
+    const real = (ts, weightG) => ({ stationId: "st-1", ts, weightG, rainMm: 0, rssi: -60, batteryPct: 90 });
     const st1 = (e) => e.snapshot().stations.find((s) => s.id === "st-1");
 
     it("지정 직후 데이터가 없으면 점검 필요(수신 기록 없음), 실제 시계를 쓴다", () => {
@@ -97,11 +97,11 @@ describe("engine", () => {
       const { e, wall } = makeLive();
       e.setRealStations(["st-1"]);
       // 점검 필요(수신 기록 없음)에서 주의로 가므로 30초 디바운싱 → 40초치 샘플
-      e.ingestReal("st-1", [0, 1, 2, 3, 4].map((i) => real(wall() - 40_000 + i * 10_000, i === 4 ? 410 : 400)));
+      e.ingestReal("st-1", [0, 1, 2, 3, 4].map((i) => real(wall() - 40_000 + i * 10_000, i === 4 ? 820 : 800)));
       run(e, 30);
       const s = st1(e);
-      expect(s.latest.leftG).toBe(410); // 시뮬레이터 값으로 덮이지 않음
-      expect(s.history.every((x) => x.leftG >= 400)).toBe(true);
+      expect(s.latest.weightG).toBe(820); // 시뮬레이터 값으로 덮이지 않음
+      expect(s.history.every((x) => x.weightG >= 800)).toBe(true);
       expect(s.judgement.state).toBe(STATES.WARN); // 820g
       expect(e.snapshot().stations.find((x) => x.id === "st-2").history.length).toBeGreaterThan(0);
     });
@@ -123,7 +123,7 @@ describe("engine", () => {
       e.setRealStations(["st-1"]);
       e.ingestReal("st-1", [real(wall(), 100)]);
       e.ingestReal("st-1", [real(wall() - 5000, 999)]);
-      expect(st1(e).latest.leftG).toBe(100);
+      expect(st1(e).latest.weightG).toBe(100);
     });
 
     it("모드 전환 직후 첫 상태 전환은 알리지 않는다 (가상 복귀 포함)", () => {

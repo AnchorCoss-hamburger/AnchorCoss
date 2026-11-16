@@ -6,8 +6,8 @@
  * @typedef {Object} Sample
  * @property {string} stationId   지점 ID
  * @property {number} ts          측정 시각 (epoch ms)
- * @property {number|null} leftG  좌 로드셀 중량 (g), 채널 누락 시 null
- * @property {number|null} rightG 우 로드셀 중량 (g), 채널 누락 시 null
+ * @property {number|null} weightG 총 중량 (g). 로드셀 2개를 HX711 하나로 합친 값 하나만 들어온다.
+ *                                 측정 실패는 null, 센서 이상은 음수·범위 초과 그대로
  * @property {number} rainMm      강우량 (mm/h)
  * @property {number} rssi        통신 신호 세기 (dBm, 예: -40 ~ -100)
  * @property {number} batteryPct  배터리 잔량 (0~100)
@@ -21,14 +21,10 @@
  * @property {"normal"|"warn"|"danger"|"check"|null} pending  디바운싱 중인 후보 상태 (화면에 "확인 중" 표시용)
  * @property {number|null} score 막힘 점수 0~100 (check 이면 null)
  * @property {string[]} reason   판정 근거 문장 (화면 표시용, 1~3줄)
- * @property {string[]} flags    보조 플래그 (FLAGS: raining/fast/imbalance)
+ * @property {string[]} flags    보조 플래그 (FLAGS: raining/fast)
  * @property {"stale"|"sensor"|null} checkCause  점검 필요 원인 (CHECK_CAUSE)
  * @property {Object} metrics    파생 값 (기획서 4.2)
- * @property {number|null} metrics.leftG    평활(최근 SMOOTH_SEC초 중앙값) 좌 중량
- * @property {number|null} metrics.rightG   평활 우 중량
- * @property {number|null} metrics.totalG
- * @property {number|null} metrics.maxSideG
- * @property {number|null} metrics.imbalance
+ * @property {number|null} metrics.totalG   평활(최근 SMOOTH_SEC초 중앙값) 총 중량
  * @property {number|null} metrics.rateGPerMin
  * @property {0|1|2|3|null} metrics.stage  하드웨어 수거 단계 (250 / 500 / 1000g)
  */

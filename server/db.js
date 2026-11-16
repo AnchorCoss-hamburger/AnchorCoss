@@ -1,8 +1,10 @@
 // SQLite 저장소 (Node 내장 node:sqlite, Node 22.13+).
 // DB 접근은 이 파일에만 둔다 → 나중에 다른 DB로 바꿀 때 여기만 고치면 된다.
 //
-// 스키마는 개발계획서 4장(지점 ID, 시각, 측정값, 강우량, 신호 세기, 배터리, 시각·지점 인덱스)을
-// 로드셀 2개 기준으로 바꾼 것. 판정 단계·근거 저장은 후속 단계 (판정은 지금 브라우저에서 한다).
+// 스키마는 개발계획서 4장(지점 ID, 시각, 측정값, 강우량, 신호 세기, 배터리, 시각·지점 인덱스) 기준.
+// 측정값은 총 중량 하나(weight_g) — 로드셀 2개를 HX711 하나로 합쳐 읽는다.
+// 예전 DB 파일(left_g/right_g)은 열 때 weight_g 열을 추가하고 기존 값을 합쳐 채운다 (migrate).
+// 판정 단계·근거 저장은 후속 단계 (판정은 지금 브라우저에서 한다).
 
 import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";
@@ -23,8 +25,7 @@ CREATE TABLE IF NOT EXISTS samples (
   station_id  TEXT    NOT NULL REFERENCES stations(id),
   ts          INTEGER NOT NULL,   -- 측정 시각 (epoch ms)
   received_at INTEGER NOT NULL,   -- 서버 수신 시각
-  left_g      REAL,               -- NULL = 채널 누락, 음수 = 센서 이상 (그대로 저장)
-  right_g     REAL,
+  weight_g    REAL,               -- 총 중량. NULL = 측정 실패, 음수 = 센서 이상 (그대로 저장)
   rain_mm     REAL,               -- 수신 시점의 기상청 강우 (없으면 NULL)
   rssi        INTEGER,
   battery_pct INTEGER,
@@ -44,8 +45,7 @@ function toSample(r) {
     stationId: r.station_id,
     ts: r.ts,
     receivedAt: r.received_at,
-    leftG: r.left_g,
-    rightG: r.right_g,
+    weightG: r.weight_g,
     rainMm: r.rain_mm,
     rssi: r.rssi,
     batteryPct: r.battery_pct,
@@ -53,7 +53,17 @@ function toSample(r) {
 }
 
 const sameValues = (row, s) =>
-  row.left_g === s.leftG && row.right_g === s.rightG && row.rssi === s.rssi && row.battery_pct === s.batteryPct;
+  row.weight_g === s.weightG && row.rssi === s.rssi && row.battery_pct === s.batteryPct;
+
+/** 예전 스키마(left_g/right_g만 있음) → weight_g 열 추가, 기존 값은 좌+우로 채움 */
+function migrate(d) {
+  const cols = d.prepare("PRAGMA table_info(samples)").all().map((c) => c.name);
+  if (cols.includes("weight_g")) return;
+  d.exec("ALTER TABLE samples ADD COLUMN weight_g REAL");
+  if (cols.includes("left_g") && cols.includes("right_g")) {
+    d.exec("UPDATE samples SET weight_g = left_g + right_g WHERE left_g IS NOT NULL AND right_g IS NOT NULL");
+  }
+}
 
 /**
  * DB 열기. file이 ":memory:"면 메모리 DB (테스트용).
@@ -65,6 +75,7 @@ export function openDb(file = process.env.DB_PATH || DEFAULT_PATH) {
   d.exec("PRAGMA foreign_keys = ON;");
   if (file !== ":memory:") d.exec("PRAGMA journal_mode = WAL;");
   d.exec(SCHEMA);
+  migrate(d);
 
   const q = {
     insertStation: d.prepare(
@@ -72,8 +83,8 @@ export function openDb(file = process.env.DB_PATH || DEFAULT_PATH) {
     ),
     findAt: d.prepare("SELECT * FROM samples WHERE station_id = ? AND ts = ?"),
     insertSample: d.prepare(
-      `INSERT INTO samples (station_id, ts, received_at, left_g, right_g, rain_mm, rssi, battery_pct)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO samples (station_id, ts, received_at, weight_g, rain_mm, rssi, battery_pct)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
     ),
     stations: d.prepare("SELECT * FROM stations ORDER BY id"),
     latest: d.prepare("SELECT * FROM samples WHERE station_id = ? ORDER BY ts DESC LIMIT 1"),
@@ -99,7 +110,7 @@ export function openDb(file = process.env.DB_PATH || DEFAULT_PATH) {
     for (let i = 0; i <= MAX_TS_BUMP; i++, ts++) {
       const row = q.findAt.get(s.stationId, ts);
       if (!row) {
-        q.insertSample.run(s.stationId, ts, s.receivedAt, s.leftG, s.rightG, s.rainMm, s.rssi, s.batteryPct);
+        q.insertSample.run(s.stationId, ts, s.receivedAt, s.weightG, s.rainMm, s.rssi, s.batteryPct);
         return "inserted";
       }
       if (i === 0 && sameValues(row, s)) return "duplicate"; // 재전송된 같은 샘플

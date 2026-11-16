@@ -2,7 +2,8 @@
 // at(tMin): 노이즈 없는 기준값을 돌려준다. 노이즈는 simulator.js가 더한다.
 // truth(tMin): 그 시각의 정답 상태 (ground truth). 판정 정확도 측정에 쓴다 (기획서 4.7).
 // expectStates / expectFlags: 판정 로직이 보여야 하는 상태 흐름·플래그 (3단계 테스트용).
-// 무게 범위는 하드웨어 기준(로드셀 정격 1kg ×2, 주의 250 / 위험 총 1000·한쪽 700g)에 맞춘다.
+// 값은 총 중량 하나(weightG). 로드셀 2개를 HX711 하나로 합쳐 읽으므로 좌/우 구분이 없다.
+// 무게 범위는 하드웨어 기준(주의 250 / 2단계 500 / 위험·수거 1000g)에 맞춘다.
 
 import { TH } from "../config.js";
 import { STATES, FLAGS } from "../logic/states.js";
@@ -11,21 +12,12 @@ const clamp01 = (x) => Math.min(1, Math.max(0, x));
 const lerp = (a, b, x) => a + (b - a) * clamp01(x);
 
 /** 디바운싱·히스테리시스 없이 임계값만으로 본 "이상적인" 상태 */
-export function truthFromWeights(leftG, rightG) {
-  const bad = (v) => v == null || v < 0 || v > TH.MAX_VALID_G;
-  if (bad(leftG) || bad(rightG)) return STATES.CHECK;
-  const total = leftG + rightG;
-  const side = Math.max(leftG, rightG);
-  if (total >= TH.DANGER_TOTAL_G || side >= TH.DANGER_SIDE_G) return STATES.DANGER;
-  if (total >= TH.WARN_TOTAL_G) return STATES.WARN;
+export function truthFromWeight(weightG) {
+  if (weightG == null || weightG < 0 || weightG > TH.MAX_VALID_G) return STATES.CHECK;
+  if (weightG >= TH.DANGER_TOTAL_G) return STATES.DANGER;
+  if (weightG >= TH.WARN_TOTAL_G) return STATES.WARN;
   return STATES.NORMAL;
 }
-
-/** 총량과 좌측 비율로 좌/우 값을 만든다 */
-const split = (total, leftRatio = 0.5) => ({
-  leftG: total * leftRatio,
-  rightG: total * (1 - leftRatio),
-});
 
 export const SCENARIOS = [
   {
@@ -33,31 +25,27 @@ export const SCENARIOS = [
     name: "정상",
     description: "낮은 값 유지, 소폭 변동",
     durationMin: 60,
-    at: (t) => ({
-      leftG: 60 + 20 * Math.sin(t / 7),
-      rightG: 50 + 15 * Math.cos(t / 9),
-      rainMm: 0,
-    }),
+    at: (t) => ({ weightG: 110 + 20 * Math.sin(t / 7) + 15 * Math.cos(t / 9), rainMm: 0 }),
     expectStates: [STATES.NORMAL],
     expectFlags: [],
   },
   {
     id: "gradual",
     name: "서서히 누적",
-    description: "좌우 균등하게 선형 증가 → 주의(≈14분) → 위험(총량, ≈68분)",
+    description: "선형 증가 → 주의(≈14분) → 위험(≈68분)",
     durationMin: 100,
-    at: (t) => ({ ...split(lerp(50, 1300, t / 90)), rainMm: 0 }),
+    at: (t) => ({ weightG: lerp(50, 1300, t / 90), rainMm: 0 }),
     expectStates: [STATES.NORMAL, STATES.WARN, STATES.DANGER],
     expectFlags: [],
   },
   {
-    id: "imbalance",
-    name: "한쪽 쏠림",
-    description: "좌측만 빠르게 증가 → 주의(≈12분) → 위험(편측 700g, ≈46분) + 편중",
+    id: "plateau",
+    name: "중간 적재",
+    description: "30분 동안 600g까지 증가 후 유지 → 주의(2단계)에서 머무름",
     durationMin: 70,
-    at: (t) => ({ leftG: lerp(30, 900, t / 60), rightG: 40, rainMm: 0 }),
-    expectStates: [STATES.NORMAL, STATES.WARN, STATES.DANGER],
-    expectFlags: [FLAGS.IMBALANCE],
+    at: (t) => ({ weightG: lerp(60, 600, t / 30), rainMm: 0 }),
+    expectStates: [STATES.NORMAL, STATES.WARN],
+    expectFlags: [],
   },
   {
     id: "rainSurge",
@@ -66,8 +54,7 @@ export const SCENARIOS = [
     durationMin: 55,
     at: (t) => {
       const raining = t >= 10 && t < 40;
-      const total = t < 10 ? 100 : 100 + 50 * (Math.min(t, 40) - 10);
-      return { ...split(total, 0.55), rainMm: raining ? 15 : 0 };
+      return { weightG: t < 10 ? 100 : 100 + 50 * (Math.min(t, 40) - 10), rainMm: raining ? 15 : 0 };
     },
     expectStates: [STATES.NORMAL, STATES.WARN, STATES.DANGER],
     expectFlags: [FLAGS.RAINING, FLAGS.FAST],
@@ -77,10 +64,7 @@ export const SCENARIOS = [
     name: "수거 후 복구",
     description: "위험 상태에서 20분에 수거 → 정상 복귀",
     durationMin: 40,
-    at: (t) => {
-      const total = t < 20 ? lerp(1200, 1300, t / 20) : 40 + (t - 20) * 2;
-      return { ...split(total), rainMm: 0 };
-    },
+    at: (t) => ({ weightG: t < 20 ? lerp(1200, 1300, t / 20) : 40 + (t - 20) * 2, rainMm: 0 }),
     expectStates: [STATES.DANGER, STATES.NORMAL],
     expectFlags: [],
   },
@@ -93,24 +77,23 @@ export const SCENARIOS = [
       let rssi = -55;
       if (t >= 12 && t < 20) rssi = lerp(-55, -92, (t - 12) / 8);
       else if (t >= 35) rssi = -60;
-      return { leftG: 70, rightG: 60, rainMm: 0, rssi, dropped: t >= 20 && t < 35 };
+      return { weightG: 130, rainMm: 0, rssi, dropped: t >= 20 && t < 35 };
     },
     // 마지막 수신(20분) 후 STALE_SEC(5분)이 지나야 점검 필요
-    truth: (t) =>
-      t >= 20 + TH.STALE_SEC / 60 && t < 35 ? STATES.CHECK : STATES.NORMAL,
+    truth: (t) => (t >= 20 + TH.STALE_SEC / 60 && t < 35 ? STATES.CHECK : STATES.NORMAL),
     expectStates: [STATES.NORMAL, STATES.CHECK, STATES.NORMAL],
     expectFlags: [],
   },
   {
     id: "sensorFault",
     name: "센서 이상",
-    description: "15~30분 우측 음수값, 35~40분 우측 채널 누락",
+    description: "15~30분 음수값, 35~40분 측정 실패(값 없음)",
     durationMin: 50,
     at: (t) => {
-      let rightG = 60;
-      if (t >= 15 && t < 30) rightG = -350;
-      else if (t >= 35 && t < 40) rightG = null;
-      return { leftG: 80, rightG, rainMm: 0 };
+      let weightG = 140;
+      if (t >= 15 && t < 30) weightG = -350;
+      else if (t >= 35 && t < 40) weightG = null;
+      return { weightG, rainMm: 0 };
     },
     expectStates: [STATES.NORMAL, STATES.CHECK, STATES.NORMAL, STATES.CHECK, STATES.NORMAL],
     expectFlags: [],
@@ -126,7 +109,7 @@ export const SCENARIOS = [
       let bump = 0;
       if (hit(10)) bump = 600; // MAX_JUMP_G(450) 초과 → 이상치 필터 확인
       if (hit(20) || hit(30)) bump = 300; // 필터 미만이지만 주의 기준(250) 초과 → 디바운싱 확인
-      return { leftG: 70 + bump, rightG: 60, rainMm: 0 };
+      return { weightG: 130 + bump, rainMm: 0 };
     },
     truth: () => STATES.NORMAL,
     expectStates: [STATES.NORMAL],
@@ -145,6 +128,5 @@ export function getScenario(id) {
 /** 시나리오의 tMin 시각 정답 상태 */
 export function truthAt(scenario, tMin) {
   if (scenario.truth) return scenario.truth(tMin);
-  const p = scenario.at(tMin);
-  return truthFromWeights(p.leftG, p.rightG);
+  return truthFromWeight(scenario.at(tMin).weightG);
 }

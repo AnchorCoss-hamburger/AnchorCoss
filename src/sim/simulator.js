@@ -28,7 +28,7 @@ const at = (dLat, dLng) => ({ lat: MAP_CENTER.lat + dLat, lng: MAP_CENTER.lng + 
 export const DEFAULT_STATIONS = [
   { id: "st-1", name: "빗물받이 #1 (실물)", real: true, scenarioId: "gradual", ...at(0, 0) },
   { id: "st-2", name: "빗물받이 #2", real: false, scenarioId: "normal", ...at(0.004, -0.006) },
-  { id: "st-3", name: "빗물받이 #3", real: false, scenarioId: "imbalance", ...at(-0.003, 0.007) },
+  { id: "st-3", name: "빗물받이 #3", real: false, scenarioId: "plateau", ...at(-0.003, 0.007) },
   { id: "st-4", name: "빗물받이 #4", real: false, scenarioId: "rainSurge", ...at(0.006, 0.004) },
   { id: "st-5", name: "빗물받이 #5", real: false, scenarioId: "collect", ...at(-0.005, -0.004) },
   { id: "st-6", name: "빗물받이 #6", real: false, scenarioId: "commDrop", ...at(0.002, 0.011) },
@@ -38,12 +38,12 @@ export const DEFAULT_STATIONS = [
   { id: "st-10", name: "빗물받이 #10", real: false, scenarioId: "gradual", startMin: 35, ...at(0.01, 0.0075) },
   { id: "st-11", name: "빗물받이 #11", real: false, scenarioId: "rainSurge", startMin: 20, ...at(-0.009, -0.007) },
   { id: "st-12", name: "빗물받이 #12", real: false, scenarioId: "normal", startMin: 40, ...at(-0.006, 0.011) },
-  { id: "st-13", name: "빗물받이 #13", real: false, scenarioId: "imbalance", startMin: 20, ...at(0.0035, 0.0025) },
+  { id: "st-13", name: "빗물받이 #13", real: false, scenarioId: "plateau", startMin: 20, ...at(0.0035, 0.0025) },
   { id: "st-14", name: "빗물받이 #14", real: false, scenarioId: "gradual", startMin: 55, ...at(-0.0105, 0.006) },
   { id: "st-15", name: "빗물받이 #15", real: false, scenarioId: "collect", startMin: 10, ...at(0.011, -0.008) },
 ];
 
-const WEIGHT_NOISE_G = 40; // 하드웨어 오차 ±100g 가정 → 표준편차 40g (±100g ≈ 2.5σ)
+const WEIGHT_NOISE_G = 40; // 하드웨어 오차 ±100g 가정 → 표준편차 40g (±100g ≈ 2.5σ), 총 중량 기준
 const RSSI_NOISE = 2;
 const BATTERY_DRAIN_PER_STEP = 0.002;
 
@@ -75,17 +75,15 @@ export function createSimulator({
       {
         ...s,
         elapsedSec: (s.startMin ?? 0) * 60,
-        offsetL: 0, // 수거(리셋) 시 빼는 값
-        offsetR: 0,
-        lastBaseL: 0,
-        lastBaseR: 0,
+        offset: 0, // 수거(리셋) 시 빼는 값
+        lastBase: 0,
         battery: 95 - rng() * 15,
       },
     ]),
   );
 
   function weight(raw, offset) {
-    if (raw == null) return null; // 채널 누락
+    if (raw == null) return null; // 측정 실패
     if (raw < 0) return Math.round(raw); // 센서 이상값은 그대로
     return Math.max(0, Math.round(raw - offset + noise(WEIGHT_NOISE_G)));
   }
@@ -97,15 +95,13 @@ export function createSimulator({
     const p = sc.at(s.elapsedSec / 60);
 
     s.battery = Math.max(0, s.battery - BATTERY_DRAIN_PER_STEP);
-    if (p.leftG != null && p.leftG >= 0) s.lastBaseL = p.leftG;
-    if (p.rightG != null && p.rightG >= 0) s.lastBaseR = p.rightG;
+    if (p.weightG != null && p.weightG >= 0) s.lastBase = p.weightG;
     if (p.dropped) return null;
 
     return {
       stationId: s.id,
       ts,
-      leftG: weight(p.leftG, s.offsetL),
-      rightG: weight(p.rightG, s.offsetR),
+      weightG: weight(p.weightG, s.offset),
       rainMm: rainOverride ?? p.rainMm ?? 0,
       rssi: Math.round((p.rssi ?? -55) + noise(RSSI_NOISE)),
       batteryPct: Math.round(s.battery),
@@ -114,8 +110,7 @@ export function createSimulator({
 
   function resetStation(s) {
     s.elapsedSec = 0;
-    s.offsetL = 0;
-    s.offsetR = 0;
+    s.offset = 0;
   }
 
   function get(id) {
@@ -152,8 +147,7 @@ export function createSimulator({
     /** 수거(리셋): 현재 쌓인 양을 빼서 0 근처로 만든다. 시나리오 흐름은 계속된다 */
     collect(id) {
       const s = get(id);
-      s.offsetL = s.lastBaseL;
-      s.offsetR = s.lastBaseR;
+      s.offset = s.lastBase;
     },
 
     /** 강우 수동 입력 (mm/h). null이면 시나리오 값 사용 */
