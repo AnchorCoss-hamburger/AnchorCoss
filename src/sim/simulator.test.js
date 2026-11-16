@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createSimulator, DEFAULT_STATIONS } from "./simulator.js";
+import { createSimulator, DEFAULT_STATIONS, rainExposure } from "./simulator.js";
 import { SCENARIOS, truthAt, getScenario } from "./scenario.js";
 
 const one = (scenarioId, opt = {}) =>
@@ -100,5 +100,39 @@ describe("simulator", () => {
     expect(sim.elapsedMin("x")).toBe(0);
     const s = sim.tick()[0].sample;
     expect(s.weightG).toBeGreaterThan(900); // collect 시나리오 시작 ≈1200g
+  });
+});
+
+describe("날씨 비에 따른 추가 적재", () => {
+  // 늘 비슷한 값인 normal 시나리오에 전체 강우를 걸어 비교 (노이즈는 같은 seed라 같다)
+  const run = (rain, minutes = 20) => {
+    const sim = one("normal", { seed: 7 });
+    if (rain != null) sim.setRain(rain);
+    let last;
+    for (let i = 0; i < (minutes * 60) / sim.stepSec; i++) last = sim.tick()[0].sample;
+    return { sim, w: last.weightG };
+  };
+
+  it("맑음 < 보통 비(5mm/h) < 호우(30mm/h)", () => {
+    const dry = run(null).w;
+    const light = run(5).w;
+    const heavy = run(30).w;
+    expect(light).toBeGreaterThan(dry + 50);
+    expect(heavy).toBeGreaterThan(light + 400);
+  });
+
+  it("수거하면 비로 쌓인 것도 함께 치운다", () => {
+    const { sim } = run(30);
+    sim.collect("x");
+    expect(sim.tick()[0].sample.weightG).toBeLessThan(250);
+  });
+
+  it("지점마다 노출 정도가 다르고 0.6~1.4 범위", () => {
+    const ex = DEFAULT_STATIONS.map((s) => rainExposure(s.id));
+    for (const e of ex) {
+      expect(e).toBeGreaterThanOrEqual(0.6);
+      expect(e).toBeLessThanOrEqual(1.4);
+    }
+    expect(new Set(ex.map((e) => e.toFixed(2))).size).toBeGreaterThan(10);
   });
 });

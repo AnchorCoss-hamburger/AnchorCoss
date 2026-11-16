@@ -27,7 +27,7 @@ export const WARNING = Object.freeze({
 export const FORECAST = Object.freeze({
   LOOKAHEAD_H: 3, // 앞으로 몇 시간 안의 비 예보를 알릴지
   DEMO_LEAD_MIN: 60, // 시뮬레이션 "날씨: 비 예보": 몇 분 뒤 비가 온다고 할지 (시뮬레이션 시각 기준)
-  DEMO_RAIN_MM: 10, // 시연용 예보 강수량 (mm/h). 그 시각이 되면 강우 수동 입력으로 실제로 비가 내린다
+  DEMO_RAIN_MM: 5, // 시연용 예보 강수량 (mm/h, 보통 비). 그 시각이 되면 강우 수동 입력으로 실제로 비가 내린다
   DEMO_WARNING_RAIN_MM: 30, // 시연 "호우특보"를 고르면 바로 내리는 비 (mm/h)
 });
 

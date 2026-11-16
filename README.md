@@ -147,7 +147,7 @@ npm run serial -- --port COM5 --baud 9600 --tare auto
 - 계산: `POST /api/route` → 공개 OSRM 서버(오픈스트리트맵 도로, 키 불필요)의 순회 경로 최적화(trip)
 - 대체 순서: OSRM 실패 시 ① 저장된 같은 경로(`data/route-cache.json`) ② 직선 추정(가까운 지점부터, 점선 표시)
 - 공개 OSRM 서버는 시험용이라 느리거나 멈출 수 있다. **발표 전에 인터넷이 되는 곳에서 같은 흐름(처음부터 → 재생)으로 경로를 한 번 띄워 두면** 저장분이 쌓여 당일 인터넷이 끊겨도 도로 경로가 나온다
-- 출발지 좌표는 `src/config.js`의 `DEPOT`, 지점 좌표는 `src/sim/simulator.js`의 `DEFAULT_STATIONS` (충북대 주변 임시 좌표 15곳, 실제 빗물받이 위치 아님)
+- 출발지 좌표는 `src/config.js`의 `DEPOT`, 지점 좌표는 `src/sim/simulator.js`의 `DEFAULT_STATIONS` (충북대 주변 임시 좌표 25곳 — 실물 1 + 가상 24, 실제 빗물받이 위치 아님)
 
 ## 폴더 구조
 
@@ -181,7 +181,8 @@ src/
 - [x] 임계값 하드웨어 기준 적용 (주의 250 / 2단계 500 / 위험 1000g), 30초 이동 중앙값, 1초 간격 대응 (`docs/기획서.md` 4.8·4.9)
 - [x] 총 중량 1채널로 변경 (로드셀 2개 → HX711 하나, `weightG`), 편측 기준·편중 삭제 (`docs/기획서.md` v3.3)
 - [ ] 센서 정격·기준값 반영 (하드웨어팀 전달 예정)
-- [x] 지점 15곳(충북대 주변 임시 좌표) + 수거 경로(OSRM, 저장분·직선 대체) (`lib/route.js`, `api/route.js`, `RoutePanel`)
+- [x] 지점 25곳(충북대 주변 임시 좌표) + 수거 경로(OSRM, 저장분·직선 대체) (`lib/route.js`, `api/route.js`, `RoutePanel`)
+- [x] 시뮬레이션에서 날씨 비가 오면 비의 양 × 지점별 노출 정도(0.6~1.4)만큼 더 빨리 쌓임, 거름망 가득(1,800g)에서 멈춤 — 맑음 / 비 예보(보통 비 5mm/h) / 호우특보(30mm/h)가 화면에서 구분됨
 - [x] 페이지 분할(대시보드·지점 상세·수거 경로), 상태·실물/가상 필터, 실물 지점 신호·배터리 숨김 (`src/ui/router.js`)
 - [x] USB 시리얼 브리지 (`npm run serial`, `scripts/serial-bridge.js`, `lib/serial.js`) — 출력 형식은 가정(한 줄에 숫자), 합동 테스트 때 옵션으로 맞춤
 - [x] 영점 빼기 (`--tare auto` / `--tare <g>`, 브리지에서 처리) — 하드웨어가 영점을 맞춰 보내면 `--tare 0`
