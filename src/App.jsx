@@ -15,6 +15,7 @@ import { DrainDetail } from "./components/DrainDetail.jsx";
 import { RoutePanel } from "./components/RoutePanel.jsx";
 import { StationCard } from "./components/StationCard.jsx";
 import { RainAdvisory } from "./components/RainAdvisory.jsx";
+import { WarningBanner } from "./components/WarningBanner.jsx";
 import { Alerts } from "./components/Toasts.jsx";
 import { collectTargets, filterStations, nextRain } from "./ui/format.js";
 import { useHashRoute, navigate, paths } from "./ui/router.js";
@@ -49,7 +50,11 @@ export default function App() {
   //  실시간: 기상청 초단기예보에서 LOOKAHEAD_H시간 안의 다음 비 (지금 비가 오고 있으면 표시 안 함 — 우천 중 표시가 대신)
   //  시뮬레이션: "비 예보(시연)"을 켜면 DEMO_LEAD_MIN분 뒤 비 예보 → 그 시각이 되면 실제로 비가 내림(강우 수동)
   const [demoRainAt, setDemoRainAt] = useState(null); // 시뮬레이션 시각
-  useEffect(() => setDemoRainAt(null), [live, sim.runId]);
+  const [demoWarning, setDemoWarning] = useState(false); // 시뮬레이션 "호우특보(시연)"
+  useEffect(() => {
+    setDemoRainAt(null);
+    setDemoWarning(false);
+  }, [live, sim.runId]);
   useEffect(() => {
     if (!live && demoRainAt != null && sim.now >= demoRainAt) {
       sim.setRain(FORECAST.DEMO_RAIN_MM);
@@ -60,6 +65,12 @@ export default function App() {
     (on) => setDemoRainAt(on ? sim.now + FORECAST.DEMO_LEAD_MIN * 60000 : null),
     [sim.now],
   );
+  // 기상특보: 실시간은 기상청 특보 현황(우리 지역 호우·태풍만), 시뮬레이션은 시연 스위치
+  const warnings = live
+    ? (weather.data?.warnings ?? null)
+    : demoWarning
+      ? { active: [{ kind: "호우경보", areas: "충청북도(청주)" }], preliminary: [], demo: true }
+      : null;
   let advisory = null;
   if (live) {
     const now = Date.now();
@@ -110,8 +121,11 @@ export default function App() {
           page={page.page}
           rainDemo={demoRainAt != null}
           onRainDemo={toggleRainDemo}
+          warningDemo={demoWarning}
+          onWarningDemo={setDemoWarning}
         />
         {/* key=runId: "처음부터"를 누르면 알림 닫기 기록·토스트도 초기화 */}
+        <WarningBanner warnings={warnings} />
         <Alerts key={sim.runId} stations={sim.stations} events={sim.events} onSelect={openStation} />
         <RainAdvisory advisory={advisory} stations={sim.stations} onSelect={openStation} />
       </div>

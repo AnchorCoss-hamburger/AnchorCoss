@@ -5,11 +5,12 @@
 // 응답 200: { ok: true, region, lat, lng, nx, ny, baseDate, baseTime, rainMm, pty, ptyLabel, tempC, humidity, windMs, fetchedAt, cached?, stale?, warning?,
 //            forecast: { baseDate, baseTime, hours: [{ ts, rainMm, pty }] } | null,   ← 초단기예보 (앞으로 6시간)
 //            todayRainMm: number | null,                                           ← 오늘 누적 강수량
+//            warnings: { tmFc, active: [{kind, areas}], preliminary: [{kind, when, areas}] } | null  ← 우리 지역 호우·태풍 특보
 //            extraWarning? }   예보·누적 강수량은 실패해도 실황 응답은 그대로 준다 (extraWarning에 이유)
 // 응답 4xx/5xx: { ok: false, error, code? }
 
-import { fetchNcst, fetchFcst, fetchTodayRain, latLngToGrid } from "../lib/kma.js";
-import { REGION } from "../src/config.js";
+import { fetchNcst, fetchFcst, fetchTodayRain, fetchPwnStatus, regionWarnings, latLngToGrid } from "../lib/kma.js";
+import { REGION, WARNING } from "../src/config.js";
 
 const TTL_MS = 10 * 60 * 1000; // 실황은 1시간 단위라 10분 캐시면 충분 (호출 수 제한 대비)
 const cache = new Map(); // "nx,ny" → { at, data }
@@ -18,7 +19,7 @@ const rainByHour = new Map(); // 오늘 누적 강수량용 시각별 실황 강
 
 /** 예보·오늘 누적 강수량 (각각 실패해도 나머지는 준다) */
 async function extras({ key, nx, ny }) {
-  const out = { forecast: null, todayRainMm: null };
+  const out = { forecast: null, todayRainMm: null, warnings: null };
   const warn = [];
   try {
     out.forecast = await fetchFcst({ key, nx, ny });
@@ -29,6 +30,12 @@ async function extras({ key, nx, ny }) {
     out.todayRainMm = await fetchTodayRain({ key, nx, ny, cache: rainByHour });
   } catch (e) {
     warn.push(`누적 강수량: ${e.message}`);
+  }
+  try {
+    const s = await fetchPwnStatus({ key });
+    out.warnings = { tmFc: s.tmFc, ...regionWarnings(s, { kinds: WARNING.KINDS, areaKeywords: WARNING.AREA_KEYWORDS }) };
+  } catch (e) {
+    warn.push(`특보: ${e.message}`);
   }
   if (warn.length) out.extraWarning = warn.join(" / ");
   return out;

@@ -17,6 +17,12 @@ export const MAP_CENTER = { lat: REGION.lat, lng: REGION.lng, zoom: 15 };
 // 수거 경로의 출발·복귀 지점 (임시: 충북대 동쪽 도로변. 실제 차고지·청소 사무소가 정해지면 교체)
 export const DEPOT = { name: "출발지", lat: REGION.lat + 0.0012, lng: REGION.lng + 0.0045 };
 
+// 기상특보 (기상청_기상특보 조회서비스): 아래 종류가 아래 지역 이름에 걸리면 화면 맨 위에 경고
+export const WARNING = Object.freeze({
+  KINDS: ["호우", "태풍"], // 특보 이름에 이 글자가 들어가면 (호우주의보·호우경보·태풍주의보 …)
+  AREA_KEYWORDS: ["청주", "충청북도", "충북"], // 특보 지역 문구에 이 글자가 들어가면 우리 지역
+});
+
 // 비 예보 기반 사전 수거 권고 (기상청 초단기예보)
 export const FORECAST = Object.freeze({
   LOOKAHEAD_H: 3, // 앞으로 몇 시간 안의 비 예보를 알릴지
