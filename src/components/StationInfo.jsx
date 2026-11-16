@@ -76,16 +76,13 @@ export function StationInfo({ station }) {
           <dt>구분</dt>
           <dd>{station.real ? "실물 센서" : "가상 지점"}</dd>
         </div>
-        <div>
-          <dt>연결</dt>
-          <dd>
-            {station.real
-              ? station.live
-                ? "USB 시리얼 · 실시간 수신 중"
-                : "USB 시리얼 (지금은 시뮬레이션)"
-              : "시뮬레이션"}
-          </dd>
-        </div>
+        {/* 연결 방식은 실물 지점만 (가상 지점은 "구분: 가상 지점"으로 충분) */}
+        {station.real && (
+          <div>
+            <dt>연결</dt>
+            <dd>{station.live ? "USB 시리얼 · 실시간 수신 중" : "USB 시리얼 (지금은 시뮬레이션)"}</dd>
+          </div>
+        )}
         <div>
           <dt>좌표</dt>
           <dd className="num">
