@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { countByState, sortByPriority, fmtAgo, fmtG, rssiLevel, toChartData, downsample, rainSegments, collectTargets, fmtDistance, fmtDuration, filterStations, fmtTime, sparkPath, fmtStage } from "./format.js";
+import { countByState, sortByPriority, fmtAgo, fmtG, rssiLevel, toChartData, downsample, rainSegments, collectTargets, fmtDistance, fmtDuration, filterStations, fmtTime, sparkPath, fmtStage, etaToDanger } from "./format.js";
 
 describe("downsample", () => {
   const pt = (ts, total, rain = 0) => ({ ts, total, rain });
@@ -160,5 +160,18 @@ describe("fmtStage", () => {
     expect(fmtStage(0)).toBe("1단계 미만");
     expect(fmtStage(3)).toBe("3단계");
     expect(fmtStage(null)).toBe("—");
+  });
+});
+
+describe("etaToDanger", () => {
+  it("남은 무게 ÷ 증가 속도", () => {
+    expect(etaToDanger(600, 16, 1000)).toEqual({ kind: "eta", minutes: 25 });
+  });
+  it("이미 초과 / 늘지 않음 / 계산 불가", () => {
+    expect(etaToDanger(1200, 30, 1000)).toEqual({ kind: "over" });
+    expect(etaToDanger(300, 0.5, 1000)).toEqual({ kind: "flat" });
+    expect(etaToDanger(300, -4, 1000)).toEqual({ kind: "flat" });
+    expect(etaToDanger(300, null, 1000)).toEqual({ kind: "unknown" });
+    expect(etaToDanger(null, 10, 1000)).toEqual({ kind: "unknown" });
   });
 });

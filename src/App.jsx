@@ -70,7 +70,7 @@ export default function App() {
   const station = page.page === "station" ? (sim.stations.find((s) => s.id === page.id) ?? null) : null;
 
   return (
-    <div className={`app${page.page === "main" || page.page === "route" ? " is-fit" : ""}`}>
+    <div className={`app${page.page === "main" || page.page === "route" ? " is-fit" : ""}${page.page === "station" ? " on-station" : ""}`}>
       {/* 상단바 + 위험 배너는 스크롤해도 위에 고정 */}
       <div className="sticky-head">
         <TopBar

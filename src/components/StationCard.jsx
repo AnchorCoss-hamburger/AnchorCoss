@@ -2,11 +2,39 @@
 // 가벼운 정보만 보여 주고, 그래프·타임라인 등은 "상세 보기"로 지점 상세 페이지에서 본다.
 
 import { StateBadge, FlagTags } from "./StateBadge.jsx";
-import { fmtAgo, fmtG, fmtStage, toChartData, downsample, sparkPath } from "../ui/format.js";
-import { STATES } from "../logic/states.js";
+import {
+  fmtAgo,
+  fmtG,
+  fmtStage,
+  fmtTime,
+  fmtDuration,
+  etaToDanger,
+  toChartData,
+  downsample,
+  sparkPath,
+} from "../ui/format.js";
+import { STATES, STATE_META } from "../logic/states.js";
 import { TH } from "../config.js";
 
 const SPARK_W = 260;
+const SHORT = { normal: "정상", warn: "주의", danger: "위험", check: "점검" };
+const RECENT = 3; // 최근 상태 변화 몇 건
+
+/** 수거 기준 도달 예상 문장 */
+function etaText(m, state) {
+  if (state === STATES.CHECK) return { text: "점검 필요 — 예측할 수 없음", tone: "check" };
+  const e = etaToDanger(m.totalG, m.rateGPerMin, TH.DANGER_TOTAL_G);
+  if (e.kind === "over") return { text: `이미 수거 기준(${fmtG(TH.DANGER_TOTAL_G)}) 초과`, tone: "danger" };
+  if (e.kind === "eta")
+    return {
+      text: `${fmtDuration(e.minutes * 60)} 뒤 도달`,
+      sub: `분당 약 ${Math.round(m.rateGPerMin)}g씩 증가 중`,
+      tone: e.minutes <= 30 ? "warn" : "normal",
+    };
+  if (e.kind === "flat") return { text: "늘지 않는 중", sub: "지금 속도로는 도달하지 않음", tone: "normal" };
+  return { text: "계산 중", sub: "증가 속도를 구하려면 5분 이상 데이터가 필요", tone: null };
+}
+
 const SPARK_H = 56;
 
 /** 최근 총 중량 추세 (선 하나 + 주의·수거 기준 점선만) */
@@ -87,7 +115,44 @@ export function StationCard({ station, now: simNow, onClose, onDetail }) {
         </div>
       </dl>
 
-      {j.reason?.[0] && <p className="station-card-reason">{j.reason[0]}</p>}
+      {(() => {
+        const e = etaText(m, j.state);
+        return (
+          <section className="station-card-sec" aria-label="수거 기준 도달 예상">
+            <h3>수거 기준 도달 예상</h3>
+            <p className={`station-card-eta${e.tone ? ` tx-${e.tone}` : ""}`}>{e.text}</p>
+            {e.sub && <p className="station-card-sub">{e.sub}</p>}
+          </section>
+        );
+      })()}
+
+      <section className="station-card-sec" aria-label="최근 상태 변화">
+        <h3>최근 상태 변화</h3>
+        {station.transitions.length === 0 ? (
+          <p className="station-card-sub">아직 변화 없음</p>
+        ) : (
+          <ol className="station-card-recent">
+            {station.transitions.slice(0, RECENT).map((t) => (
+              <li key={t.id}>
+                <span className="num muted">{fmtTime(t.ts).slice(0, 5)}</span>
+                <span className={`log-dot st-${t.from}`} aria-label={STATE_META[t.from]?.label}>
+                  {STATE_META[t.from]?.icon}
+                </span>
+                <span className="muted" aria-hidden="true">
+                  →
+                </span>
+                <span className={`log-dot st-${t.to}`} aria-label={STATE_META[t.to]?.label}>
+                  {STATE_META[t.to]?.icon}
+                </span>
+                <span className={`tx-${t.to}`}>{SHORT[t.to]}</span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
+
+      {/* 점검 필요일 때만 원인 한 줄 (통신 두절·센서 이상) — 나머지 근거는 위 숫자와 겹친다 */}
+      {j.state === STATES.CHECK && j.reason?.[0] && <p className="station-card-reason">{j.reason[0]}</p>}
 
       <button className="btn is-primary station-card-more" onClick={onDetail}>
         상세 보기 →

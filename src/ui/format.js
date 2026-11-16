@@ -204,3 +204,18 @@ export function fmtStage(stage) {
   if (stage == null) return "—";
   return stage === 0 ? "1단계 미만" : `${stage}단계`;
 }
+
+/**
+ * 수거 기준 도달 예상 (지금 증가 속도가 이어진다고 가정한 단순 직선 예측).
+ * → { kind: "over" }          이미 기준 이상
+ *   { kind: "eta", minutes }  기준까지 남은 시간(분)
+ *   { kind: "flat" }          늘지 않음 (분당 minRate g 미만)
+ *   { kind: "unknown" }       값이나 속도를 아직 계산할 수 없음 (데이터 5분 미만 등)
+ */
+export function etaToDanger(totalG, rateGPerMin, dangerG, { minRate = 1 } = {}) {
+  if (totalG == null) return { kind: "unknown" };
+  if (totalG >= dangerG) return { kind: "over" };
+  if (rateGPerMin == null) return { kind: "unknown" };
+  if (rateGPerMin < minRate) return { kind: "flat" };
+  return { kind: "eta", minutes: (dangerG - totalG) / rateGPerMin };
+}
