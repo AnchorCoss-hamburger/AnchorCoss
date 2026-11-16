@@ -6,8 +6,9 @@ import { WeightChart } from "./WeightChart.jsx";
 import { CommStatus } from "./CommStatus.jsx";
 import { Timeline } from "./Timeline.jsx";
 import { SCENARIOS } from "../sim/scenario.js";
-import { fmtG, fmtAgo, fmtStage } from "../ui/format.js";
-import { STATES } from "../logic/states.js";
+import { fmtG, fmtAgo, fmtStage, stateDurations, rainFillRates } from "../ui/format.js";
+import { TH } from "../config.js";
+import { STATES, STATE_META } from "../logic/states.js";
 
 /** 근거 문장의 숫자(1,234g, 80%, 7분 등)를 굵게 */
 function Emph({ text }) {
@@ -20,6 +21,81 @@ function fmtRate(v) {
   if (v == null || !Number.isFinite(v)) return "—";
   const r = Math.round(v);
   return `분당 ${r > 0 ? "+" : ""}${r.toLocaleString("ko-KR")}g`;
+}
+
+const WINDOW_MS = 60 * 60 * 1000; // 최근 1시간
+const SHARE_ORDER = [STATES.NORMAL, STATES.WARN, STATES.DANGER, STATES.CHECK];
+const SHORT = { normal: "정상", warn: "주의", danger: "위험", check: "점검" };
+
+/** 최근 1시간 상태 비율 막대 */
+function StateShare({ station, clock }) {
+  const from = Math.max(clock - WINDOW_MS, station.history[0]?.ts ?? clock);
+  const span = clock - from;
+  if (span < 60_000) return <p className="muted">데이터 수집 중…</p>;
+  const d = stateDurations(station.transitions, station.judgement.state, from, clock);
+  const parts = SHARE_ORDER.map((st) => ({ st, pct: (d[st] / span) * 100 })).filter((p) => p.pct > 0);
+  const min = Math.round(span / 60000);
+  return (
+    <div className="share">
+      <div
+        className="share-bar"
+        role="img"
+        aria-label={parts.map((p) => `${SHORT[p.st]} ${Math.round(p.pct)}%`).join(", ")}
+      >
+        {parts.map((p) => (
+          <span key={p.st} className={`share-seg st-${p.st}`} style={{ width: `${p.pct}%` }} />
+        ))}
+      </div>
+      <ul className="share-legend">
+        {parts.map((p) => (
+          <li key={p.st}>
+            <span className={`share-dot st-${p.st}`} aria-hidden="true">
+              {STATE_META[p.st].icon}
+            </span>
+            {SHORT[p.st]} <b className="num">{Math.round(p.pct)}%</b>
+          </li>
+        ))}
+      </ul>
+      <p className="muted share-note">최근 {min}분 기준</p>
+    </div>
+  );
+}
+
+// 1g 미만·음수는 잡음 수준이라 "거의 없음" (짧은 구간에서는 센서 오차 때문에 음수가 나올 수 있음)
+const fmtRateShort = (v) => (v == null ? "—" : v < 1 ? "거의 없음" : `분당 +${Math.round(v)}g`);
+
+/** 비 올 때 vs 안 올 때 적재 속도 */
+function RainCompare({ history }) {
+  const r = rainFillRates(history, { rainMmH: TH.RAIN_MM_H, maxG: TH.MAX_VALID_G });
+  const max = Math.max(1, r.rain ?? 0, r.dry ?? 0);
+  const bar = (v) => `${Math.max(2, (Math.max(0, v ?? 0) / max) * 100)}%`;
+  let msg;
+  if (r.rain == null && r.dry == null) msg = "비교할 데이터가 아직 부족합니다 (각각 5분 이상 필요).";
+  else if (r.rain == null) msg = "최근 1시간 동안 비가 온 구간이 짧거나 없어 비교할 수 없습니다.";
+  else if (r.dry == null) msg = "최근 1시간 동안 계속 비가 왔습니다.";
+  else if (r.dry > 0.5 && r.rain > r.dry)
+    msg = `비가 올 때 약 ${Math.round((r.rain / r.dry) * 10) / 10}배 빨리 쌓입니다.`;
+  else if (r.rain > r.dry) msg = "비가 올 때 더 빨리 쌓입니다.";
+  else msg = "비가 와도 쌓이는 속도에 큰 차이가 없습니다.";
+  return (
+    <div className="rain-cmp">
+      <div className="rain-row">
+        <span className="rain-label">비 올 때</span>
+        <span className="rain-track">
+          <span className="rain-fill is-rain" style={{ width: bar(r.rain) }} />
+        </span>
+        <b className="num">{fmtRateShort(r.rain)}</b>
+      </div>
+      <div className="rain-row">
+        <span className="rain-label">맑을 때</span>
+        <span className="rain-track">
+          <span className="rain-fill" style={{ width: bar(r.dry) }} />
+        </span>
+        <b className="num">{fmtRateShort(r.dry)}</b>
+      </div>
+      <p className="rain-msg">{msg}</p>
+    </div>
+  );
 }
 
 export function DrainDetail({ station, now, onCollect, onScenario }) {
@@ -114,6 +190,18 @@ export function DrainDetail({ station, now, onCollect, onScenario }) {
         <div className="detail-block">
           <h3 className="block-title">중량 변화 (최근 1시간)</h3>
           <WeightChart history={station.history} transitions={station.transitions} />
+        </div>
+      </div>
+
+      {/* 최근 1시간 상태 비율 | 우천 영향 */}
+      <div className="detail-row is-half">
+        <div className="detail-block">
+          <h3 className="block-title">최근 1시간 상태 비율</h3>
+          <StateShare station={station} clock={clock} />
+        </div>
+        <div className="detail-block">
+          <h3 className="block-title">비가 올 때 쌓이는 속도</h3>
+          <RainCompare history={station.history} />
         </div>
       </div>
 

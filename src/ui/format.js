@@ -219,3 +219,48 @@ export function etaToDanger(totalG, rateGPerMin, dangerG, { minRate = 1 } = {}) 
   if (rateGPerMin < minRate) return { kind: "flat" };
   return { kind: "eta", minutes: (dangerG - totalG) / rateGPerMin };
 }
+
+/**
+ * 구간 [from, to] 동안 상태별 머문 시간(ms).
+ * transitions: 최신순 [{ ts, from, to }], current: 지금 상태.
+ * 구간 시작 시점의 상태는 "구간 안 첫 전환의 from" (전환이 없으면 지금 상태)로 본다.
+ */
+export function stateDurations(transitions, current, from, to) {
+  const out = { normal: 0, warn: 0, danger: 0, check: 0 };
+  if (!(to > from)) return out;
+  const inWin = transitions.filter((t) => t.ts > from && t.ts <= to).sort((a, b) => a.ts - b.ts);
+  let state = inWin.length ? inWin[0].from : current;
+  let t0 = from;
+  for (const t of inWin) {
+    if (state in out) out[state] += t.ts - t0;
+    state = t.to;
+    t0 = t.ts;
+  }
+  if (state in out) out[state] += to - t0;
+  return out;
+}
+
+/**
+ * 비 올 때 vs 안 올 때 평균 적재 속도 (분당 g).
+ * 이웃한 두 샘플 사이의 증가량을 강우 여부로 나눠 더한 뒤 시간으로 나눈다 (노이즈는 구간 안에서 상쇄됨).
+ * 제외: 수신이 끊긴 사이(gapMs 초과), 센서 이상값, 수거로 크게 줄어든 사이(dropG 넘게 감소).
+ * 한쪽 시간이 minMin분 미만이면 그쪽은 null (판단하기에 너무 짧음).
+ * @returns {{ rain: number|null, dry: number|null, rainMin: number, dryMin: number }}
+ */
+export function rainFillRates(history, { rainMmH, maxG = 5000, gapMs = 30_000, dropG = 300, minMin = 5 } = {}) {
+  const acc = { rain: { g: 0, ms: 0 }, dry: { g: 0, ms: 0 } };
+  for (let i = 1; i < history.length; i++) {
+    const a = history[i - 1];
+    const b = history[i];
+    const dt = b.ts - a.ts;
+    if (dt <= 0 || dt > gapMs) continue;
+    if (!valid(a.weightG, maxG) || !valid(b.weightG, maxG)) continue;
+    const dg = b.weightG - a.weightG;
+    if (dg < -dropG) continue; // 수거
+    const k = (b.rainMm ?? 0) >= rainMmH ? "rain" : "dry";
+    acc[k].g += dg;
+    acc[k].ms += dt;
+  }
+  const rate = (x) => (x.ms >= minMin * 60000 ? x.g / (x.ms / 60000) : null);
+  return { rain: rate(acc.rain), dry: rate(acc.dry), rainMin: acc.rain.ms / 60000, dryMin: acc.dry.ms / 60000 };
+}

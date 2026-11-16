@@ -940,6 +940,9 @@ button.summary-cell:hover {
   gap: var(--sp-5);
   align-items: start;
 }
+.detail-row.is-half {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
 .detail-row.is-chart {
   grid-template-columns: 260px minmax(0, 1fr);
 }
@@ -948,6 +951,7 @@ button.summary-cell:hover {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .detail-row,
+  .detail-row.is-half,
   .detail-row.is-chart {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -1415,7 +1419,7 @@ button.summary-cell:hover {
 
 /* ---------- 상세 페이지 ---------- */
 .page.is-narrow {
-  max-width: 1200px;
+  max-width: 1680px;
   width: 100%;
   margin: 0 auto;
 }
@@ -1433,7 +1437,7 @@ button.summary-cell:hover {
   position: absolute;
   top: var(--sp-3);
   right: var(--sp-3);
-  bottom: var(--sp-3); /* 지도 높이에 맞춘 세로 패널 (넘치면 카드 안에서 스크롤) */
+  max-height: calc(100% - 2 * var(--sp-3)); /* 내용만큼만, 지도보다 길면 카드 안에서 스크롤 */
   z-index: 600; /* 마커 위, Leaflet 컨트롤(800) 아래 */
   width: 300px;
   display: flex;
@@ -1777,4 +1781,86 @@ button.summary-cell:hover {
   left: auto;
   right: var(--sp-5);
   transform: none;
+}
+
+/* ---------- 상세: 최근 1시간 상태 비율 ---------- */
+.share-bar {
+  display: flex;
+  height: 16px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--st-check-bg);
+}
+.share-seg.st-normal { background: var(--st-normal); }
+.share-seg.st-warn { background: var(--st-warn); }
+.share-seg.st-danger { background: var(--st-danger); }
+.share-seg.st-check { background: var(--st-check); }
+.share-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1) var(--sp-4);
+  margin: var(--sp-2) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-small);
+}
+.share-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.share-dot {
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 9px;
+}
+.share-dot.st-normal { background: var(--st-normal); }
+.share-dot.st-warn { background: var(--st-warn); }
+.share-dot.st-danger { background: var(--st-danger); }
+.share-dot.st-check { background: var(--st-check); }
+.share-note {
+  margin-top: 4px;
+  font-size: 11px;
+}
+
+/* ---------- 상세: 비 올 때 vs 맑을 때 ---------- */
+.rain-cmp {
+  display: grid;
+  gap: var(--sp-2);
+}
+.rain-row {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) 96px;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-small);
+}
+.rain-label {
+  color: var(--text-sub);
+}
+.rain-track {
+  height: 10px;
+  border-radius: 5px;
+  background: var(--bg);
+  overflow: hidden;
+}
+.rain-fill {
+  display: block;
+  height: 100%;
+  border-radius: 5px;
+  background: var(--text-mute);
+}
+.rain-fill.is-rain {
+  background: var(--accent);
+}
+.rain-row b {
+  text-align: right;
+}
+.rain-msg {
+  font-size: var(--fs-small);
+  font-weight: 600;
 }

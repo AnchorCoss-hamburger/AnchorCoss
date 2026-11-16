@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { countByState, sortByPriority, fmtAgo, fmtG, rssiLevel, toChartData, downsample, rainSegments, collectTargets, fmtDistance, fmtDuration, filterStations, fmtTime, sparkPath, fmtStage, etaToDanger } from "./format.js";
+import { countByState, sortByPriority, fmtAgo, fmtG, rssiLevel, toChartData, downsample, rainSegments, collectTargets, fmtDistance, fmtDuration, filterStations, fmtTime, sparkPath, fmtStage, etaToDanger, stateDurations, rainFillRates } from "./format.js";
 
 describe("downsample", () => {
   const pt = (ts, total, rain = 0) => ({ ts, total, rain });
@@ -173,5 +173,37 @@ describe("etaToDanger", () => {
     expect(etaToDanger(300, -4, 1000)).toEqual({ kind: "flat" });
     expect(etaToDanger(300, null, 1000)).toEqual({ kind: "unknown" });
     expect(etaToDanger(null, 10, 1000)).toEqual({ kind: "unknown" });
+  });
+});
+
+describe("stateDurations", () => {
+  const M = 60000;
+  it("구간 안 전환으로 상태별 시간을 나눈다", () => {
+    const tr = [
+      { ts: 40 * M, from: "warn", to: "danger" }, // 최신순
+      { ts: 10 * M, from: "normal", to: "warn" },
+    ];
+    expect(stateDurations(tr, "danger", 0, 60 * M)).toEqual({ normal: 10 * M, warn: 30 * M, danger: 20 * M, check: 0 });
+  });
+  it("구간 밖 전환은 무시, 전환이 없으면 지금 상태로 전부", () => {
+    expect(stateDurations([{ ts: -5 * M, from: "normal", to: "warn" }], "warn", 0, 30 * M)).toEqual({ normal: 0, warn: 30 * M, danger: 0, check: 0 });
+  });
+});
+
+describe("rainFillRates", () => {
+  const S = 10000;
+  const pts = (n, start, step, rainMm, t0) => Array.from({ length: n }, (_, i) => ({ ts: t0 + i * S, weightG: start + i * step, rainMm }));
+  it("비 올 때와 안 올 때 속도를 따로", () => {
+    // 맑음 10분: 10초에 1g (분당 6g) → 비 10분: 10초에 5g (분당 30g)
+    const h = [...pts(61, 100, 1, 0, 0), ...pts(60, 165, 5, 10, 610 * S)];
+    const r = rainFillRates(h, { rainMmH: 1 });
+    expect(r.dry).toBeCloseTo(6, 0);
+    expect(r.rain).toBeCloseTo(30, 0);
+  });
+  it("수거로 크게 줄어든 사이·끊긴 사이는 빼고, 짧으면 null", () => {
+    const h = [...pts(61, 100, 1, 0, 0), { ts: 610 * S, weightG: 0, rainMm: 0 }, { ts: 2000 * S, weightG: 5, rainMm: 0 }];
+    const r = rainFillRates(h, { rainMmH: 1 });
+    expect(r.dry).toBeCloseTo(6, 0);
+    expect(r.rain).toBeNull();
   });
 });
