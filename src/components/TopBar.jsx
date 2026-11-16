@@ -17,7 +17,7 @@ const fmtClock = (ts) =>
   });
 
 /** 상단바: 제목 · 시뮬레이션 시각 · 페이지 이동 · 시연 제어(전체 적용) */
-export function TopBar({ sim, mode, onMode, weather, feed, realStation, page, rainDemo, onRainDemo, warningDemo, onWarningDemo }) {
+export function TopBar({ sim, mode, onMode, weather, feed, realStation, page, weatherDemo, onWeatherDemo }) {
   return (
     <header className="topbar">
       <div className="topbar-title">
@@ -39,10 +39,8 @@ export function TopBar({ sim, mode, onMode, weather, feed, realStation, page, ra
         weather={weather}
         feed={feed}
         realStation={realStation}
-        rainDemo={rainDemo}
-        onRainDemo={onRainDemo}
-        warningDemo={warningDemo}
-        onWarningDemo={onWarningDemo}
+        weatherDemo={weatherDemo}
+        onWeatherDemo={onWeatherDemo}
       />
       <nav className="page-tabs" aria-label="페이지">
         {NAV.map((n) => (

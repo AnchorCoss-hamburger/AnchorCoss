@@ -46,36 +46,45 @@ export default function App() {
     // runId: "처음부터"로 시뮬레이터가 새로 만들어져도 다시 적용
   }, [live, liveRain, sim.runId, sim.setRain]);
 
-  // 비 예보 기반 사전 수거 권고
-  //  실시간: 기상청 초단기예보에서 LOOKAHEAD_H시간 안의 다음 비 (지금 비가 오고 있으면 표시 안 함 — 우천 중 표시가 대신)
-  //  시뮬레이션: "비 예보(시연)"을 켜면 DEMO_LEAD_MIN분 뒤 비 예보 → 그 시각이 되면 실제로 비가 내림(강우 수동)
-  const [demoRainAt, setDemoRainAt] = useState(null); // 시뮬레이션 시각
-  const [demoWarning, setDemoWarning] = useState(false); // 시뮬레이션 "호우특보(시연)"
+  // 날씨 상황 (시뮬레이션 모드에서 하나만 고름): "none" 맑음 / "forecast" 비 예보 / "warning" 호우특보
+  //  비 예보: DEMO_LEAD_MIN분 뒤 비 예보 → 그 시각이 되면 실제로 비가 내림(강우 수동), 이후 "맑음"으로 돌아감
+  //  호우특보: 호우경보 발효 + 이미 비가 오는 상태(DEMO_WARNING_RAIN_MM)
+  //  실시간 모드에서는 기상청 초단기예보·특보 현황을 그대로 쓴다
+  const [weatherDemo, setWeatherDemo] = useState("none");
+  const [demoRainAt, setDemoRainAt] = useState(null); // 비 예보 시각 (시뮬레이션 시각)
   useEffect(() => {
+    setWeatherDemo("none");
     setDemoRainAt(null);
-    setDemoWarning(false);
   }, [live, sim.runId]);
   useEffect(() => {
     if (!live && demoRainAt != null && sim.now >= demoRainAt) {
       sim.setRain(FORECAST.DEMO_RAIN_MM);
       setDemoRainAt(null);
+      setWeatherDemo("none");
     }
   }, [live, demoRainAt, sim.now, sim.setRain]);
-  const toggleRainDemo = useCallback(
-    (on) => setDemoRainAt(on ? sim.now + FORECAST.DEMO_LEAD_MIN * 60000 : null),
-    [sim.now],
+  const chooseWeatherDemo = useCallback(
+    (v) => {
+      setDemoRainAt(v === "forecast" ? sim.now + FORECAST.DEMO_LEAD_MIN * 60000 : null);
+      if (v === "warning") sim.setRain(FORECAST.DEMO_WARNING_RAIN_MM);
+      else if (weatherDemo === "warning") sim.setRain(null); // 호우특보를 끄면 그 비도 그침
+      setWeatherDemo(v);
+    },
+    [sim.now, sim.setRain, weatherDemo],
   );
-  // 기상특보: 실시간은 기상청 특보 현황(우리 지역 호우·태풍만), 시뮬레이션은 시연 스위치
+  // 기상특보: 실시간은 기상청 특보 현황(우리 지역 호우·태풍만)
   const warnings = live
     ? (weather.data?.warnings ?? null)
-    : demoWarning
+    : weatherDemo === "warning"
       ? { active: [{ kind: "호우경보", areas: "충청북도(청주)" }], preliminary: [], demo: true }
       : null;
+  // 비 예보 기반 사전 수거 권고: 지금 비가 오거나 호우특보가 발효 중이면 띄우지 않음 (이미 "즉시 점검" 상황)
   let advisory = null;
   if (live) {
     const now = Date.now();
     const n = nextRain(weather.data?.forecast?.hours, now, { minMm: TH.RAIN_MM_H, withinH: FORECAST.LOOKAHEAD_H });
-    if (n && !((weather.data?.rainMm ?? 0) >= TH.RAIN_MM_H)) advisory = { ...n, now };
+    const rainingNow = (weather.data?.rainMm ?? 0) >= TH.RAIN_MM_H;
+    if (n && !rainingNow && !warnings?.active?.length) advisory = { ...n, now };
   } else if (demoRainAt != null) {
     advisory = { ts: demoRainAt, rainMm: FORECAST.DEMO_RAIN_MM, now: sim.now, demo: true };
   }
@@ -119,10 +128,8 @@ export default function App() {
           feed={feed}
           realStation={realStation}
           page={page.page}
-          rainDemo={demoRainAt != null}
-          onRainDemo={toggleRainDemo}
-          warningDemo={demoWarning}
-          onWarningDemo={setDemoWarning}
+          weatherDemo={weatherDemo}
+          onWeatherDemo={chooseWeatherDemo}
         />
         {/* key=runId: "처음부터"를 누르면 알림 닫기 기록·토스트도 초기화 */}
         <WarningBanner warnings={warnings} />

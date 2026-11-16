@@ -16,10 +16,8 @@ export function ScenarioControls({
   weather,
   feed,
   realStation,
-  rainDemo = false,
-  onRainDemo,
-  warningDemo = false,
-  onWarningDemo,
+  weatherDemo = "none",
+  onWeatherDemo,
 }) {
   const manualRain = sim.rainOverride != null;
   const [lastRain, setLastRain] = useState(15); // 체크를 껐다 켜도 마지막 값 유지
@@ -110,13 +108,22 @@ export function ScenarioControls({
                 <span className="control-value num">{sim.rainOverride}mm/h</span>
               </>
             )}
-            <label className="control-check" title="1시간 뒤 비가 온다는 예보를 띄우고, 그 시각이 되면 실제로 비가 내립니다 (시연용)">
-              <input type="checkbox" checked={rainDemo} onChange={(e) => onRainDemo?.(e.target.checked)} />
-              비 예보(시연)
-            </label>
-            <label className="control-check" title="청주에 호우경보가 발효된 상황을 화면 맨 위에 띄웁니다 (시연용)">
-              <input type="checkbox" checked={warningDemo} onChange={(e) => onWarningDemo?.(e.target.checked)} />
-              호우특보(시연)
+            {/* 날씨 상황은 하나만 (호우특보면 이미 비가 오는 상황이라 비 예보와 함께 고를 수 없음) */}
+            <label
+              className="detail-scenario"
+              title="비 예보: 1시간 뒤 비 예보를 띄우고 그 시각이 되면 실제로 비가 내림 · 호우특보: 호우경보 발효 + 비가 오는 상태"
+            >
+              <span className="muted">날씨</span>
+              <select
+                className="control-select"
+                value={weatherDemo}
+                onChange={(e) => onWeatherDemo?.(e.target.value)}
+                aria-label="날씨 상황"
+              >
+                <option value="none">맑음</option>
+                <option value="forecast">비 예보</option>
+                <option value="warning">호우특보</option>
+              </select>
             </label>
           </>
         )}
