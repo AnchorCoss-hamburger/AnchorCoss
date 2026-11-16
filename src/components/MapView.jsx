@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { MAP_CENTER } from "../config.js";
 import { STATES, STATE_META } from "../logic/states.js";
 import { collectionHistory } from "../sim/history.js";
+import { guardWheelZoom } from "../ui/mapGuard.js";
 
 const TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 const TILE_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
@@ -37,10 +38,12 @@ export function MapView({
     let disposed = false;
     import("leaflet").then(({ default: L }) => {
       if (disposed || !elRef.current) return;
-      const map = L.map(elRef.current, { zoomControl: true }).setView(
+      // 휠 줌은 기본 꺼짐 — 지도를 클릭했을 때만 켜서, 스크롤하다 지도만 확대되는 일을 막는다 (src/ui/mapGuard.js)
+      const map = L.map(elRef.current, { zoomControl: true, scrollWheelZoom: false }).setView(
         [MAP_CENTER.lat, MAP_CENTER.lng],
         MAP_CENTER.zoom,
       );
+      guardWheelZoom(map);
       const tiles = L.tileLayer(TILE_URL, { maxZoom: 19, attribution: TILE_ATTR }).addTo(map);
       tiles.on("tileerror", () => setTilesFailed(true));
       tiles.on("tileload", () => setTilesFailed(false));

@@ -130,6 +130,9 @@ export function createEngine({
           const live = realIds.has(s.id);
           return {
             ...s,
+            // 실물 지점이 아직 서버 데이터로 연결되지 않았으면(시뮬레이션 모드) 가상 값으로 움직이므로,
+            // 이름에 그대로 "(실물)"을 두면 "실물이 위험"으로 오해할 수 있다
+            name: s.real && !live ? s.name.replace("(실물)", "(실물·연결 전)") : s.name,
             live, // 실물 데이터 수신 중인 지점
             clockNow: live ? wall : sim.now, // "N분 전" 계산에 쓸 시계
             latest: p.latest,
