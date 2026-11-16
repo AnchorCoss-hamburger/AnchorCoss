@@ -54,6 +54,30 @@ export function fmtHM(ts) {
   return new Date(ts).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
+// 그래프 시간축 눈금 간격 후보 (ms). 구간에 맞는 가장 촘촘한 간격을 고른다
+const TICK_STEPS_MS = [10e3, 15e3, 30e3, 60e3, 2 * 60e3, 5 * 60e3, 10 * 60e3, 15 * 60e3, 30 * 60e3, 3600e3, 2 * 3600e3, 6 * 3600e3];
+
+/**
+ * 그래프 시간축 눈금: 구간 [from, to]를 maxTicks개 안팎의 "깔끔한 간격"(현지 시각의 분·초 경계)으로 나눈다.
+ * 라벨은 fmtTick으로 만든다. 눈금 간격과 라벨 해상도를 맞추지 않으면 5분 구간에 30초 간격 눈금이
+ * 찍히면서 "22:50"이 두 번 나오는 식의 중복 라벨이 생긴다.
+ * @returns {{ ticks: number[], stepMs: number }}
+ */
+export function timeTicks(from, to, maxTicks = 6) {
+  const span = to - from;
+  if (!(span > 0)) return { ticks: [from], stepMs: 60e3 };
+  const stepMs = TICK_STEPS_MS.find((s) => span / s <= maxTicks) ?? TICK_STEPS_MS[TICK_STEPS_MS.length - 1];
+  const off = new Date(from).getTimezoneOffset() * 60e3; // 현지 시각 = ts - off
+  const ticks = [];
+  for (let t = Math.ceil((from - off) / stepMs) * stepMs + off; t <= to; t += stepMs) ticks.push(t);
+  return { ticks, stepMs };
+}
+
+/** 눈금 라벨: 간격이 1분 미만이면 초까지(HH:MM:SS), 아니면 HH:MM */
+export function fmtTick(ts, stepMs) {
+  return stepMs < 60e3 ? fmtTime(ts) : fmtHM(ts);
+}
+
 /** 신호 세기 4단계 (dBm): -60 이상 4칸 … -90 미만 0칸 */
 export function rssiLevel(rssi) {
   if (rssi == null) return 0;

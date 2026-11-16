@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { countByState, sortByPriority, fmtAgo, fmtG, rssiLevel, toChartData, downsample, rainSegments, collectTargets, fmtDistance, fmtDuration, filterStations, fmtTime, sparkPath, fmtStage, etaToDanger, stateDurations, rainFillRates, forecastLine, nextRain, stateSegments } from "./format.js";
+import { countByState, sortByPriority, fmtAgo, fmtG, rssiLevel, toChartData, downsample, rainSegments, collectTargets, fmtDistance, fmtDuration, filterStations, fmtTime, sparkPath, fmtStage, etaToDanger, stateDurations, rainFillRates, forecastLine, nextRain, stateSegments , timeTicks, fmtTick } from "./format.js";
 
 describe("downsample", () => {
   const pt = (ts, total, rain = 0) => ({ ts, total, rain });
@@ -252,5 +252,53 @@ describe("stateSegments", () => {
       { state: "normal", start: 3, end: 4 },
     ]);
     expect(stateSegments([])).toEqual([]);
+  });
+});
+
+describe("timeTicks / fmtTick (그래프 시간축)", () => {
+  const MIN = 60_000;
+  const local = (h, m, sec = 0) => new Date(2026, 10, 16, h, m, sec).getTime();
+  const labelsOf = (from, to) => {
+    const { ticks, stepMs } = timeTicks(from, to);
+    return { ticks, stepMs, labels: ticks.map((t) => fmtTick(t, stepMs)) };
+  };
+
+  it("5분 구간: 1분 간격 눈금이고 라벨이 서로 다르다 (예전엔 30초 간격 + HH:MM 라벨로 22:50이 두 번 나옴)", () => {
+    const from = local(22, 45, 17);
+    const r = labelsOf(from, from + 5 * MIN);
+    expect(r.stepMs).toBe(MIN);
+    expect(new Set(r.labels).size).toBe(r.labels.length);
+    expect(r.ticks.every((t) => new Date(t).getSeconds() === 0)).toBe(true); // 분 경계
+    expect(r.ticks.every((t) => t >= from && t <= from + 5 * MIN)).toBe(true);
+  });
+
+  it("1시간 구간: 10분 간격(분이 0·10·20…), 눈금 7개 이하", () => {
+    const from = local(21, 53, 40);
+    const r = labelsOf(from, from + 60 * MIN);
+    expect(r.stepMs).toBe(10 * MIN);
+    expect(r.ticks.length).toBeLessThanOrEqual(7);
+    expect(r.ticks.every((t) => new Date(t).getMinutes() % 10 === 0)).toBe(true);
+  });
+
+  it("1분 미만 간격이면 초까지 표시", () => {
+    const from = local(22, 45, 3);
+    const r = labelsOf(from, from + 90_000);
+    expect(r.stepMs).toBeLessThan(MIN);
+    expect(r.labels.every((l) => /^\d\d:\d\d:\d\d$/.test(l))).toBe(true);
+  });
+
+  it("어떤 구간 길이에서도 눈금 개수가 적당하고 라벨이 중복되지 않는다", () => {
+    for (const span of [45e3, 90e3, 3 * MIN, 5 * MIN, 12 * MIN, 20 * MIN, 60 * MIN, 3 * 60 * MIN, 12 * 60 * MIN]) {
+      const from = local(22, 41, 29);
+      const { labels } = labelsOf(from, from + span);
+      expect(new Set(labels).size).toBe(labels.length);
+      expect(labels.length).toBeLessThanOrEqual(8);
+      expect(labels.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("구간이 0이거나 거꾸로면 눈금 하나", () => {
+    expect(timeTicks(1000, 1000).ticks).toEqual([1000]);
+    expect(timeTicks(2000, 1000).ticks).toEqual([2000]);
   });
 });

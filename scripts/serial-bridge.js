@@ -125,6 +125,7 @@ function onLine(line) {
   }
   if (p.kind === "fault") {
     console.log(`  센서 오류 문구: ${String(line).trim()} → 센서 이상으로 전송`);
+    lastShown = null; // 전송 로그에 직전 줄의 원시값이 남지 않게
     enqueue(null);
     return;
   }

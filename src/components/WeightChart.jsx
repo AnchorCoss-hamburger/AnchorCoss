@@ -15,7 +15,7 @@ import {
 } from "recharts";
 import { TH } from "../config.js";
 import { COLORS } from "../ui/colors.js";
-import { toChartData, downsample, rainSegments, fmtHM, fmtTime, fmtG } from "../ui/format.js";
+import { toChartData, downsample, rainSegments, timeTicks, fmtTick, fmtHM, fmtTime, fmtG } from "../ui/format.js";
 
 const NAMES = { total: "총 중량", forecast: "예측 (현재 속도 기준)" };
 const MAX_POINTS = 400;
@@ -35,6 +35,7 @@ export function WeightChart({ history, transitions, forecast = null }) {
   const yMax = Math.ceil(Math.max(TH.DANGER_TOTAL_G * 1.2, maxTotal * 1.1) / 100) * 100;
   const rain = rainSegments(data, TH.RAIN_MM_H);
   const marks = transitions.filter((t) => t.ts >= from && t.ts <= lastTs);
+  const { ticks, stepMs } = timeTicks(from, to); // 시간축: 분·초 경계에 맞춘 눈금 (중복 라벨 방지)
 
   return (
     <div className="chart">
@@ -51,10 +52,10 @@ export function WeightChart({ history, transitions, forecast = null }) {
             type="number"
             scale="time"
             domain={[from, to]}
-            tickFormatter={fmtHM}
+            ticks={ticks}
+            tickFormatter={(v) => fmtTick(v, stepMs)}
             stroke={COLORS.axis}
             fontSize={12}
-            minTickGap={40}
           />
           <YAxis domain={[0, yMax]} stroke={COLORS.axis} fontSize={12} width={52} tickFormatter={(v) => `${v}g`} />
           <ReferenceLine y={TH.WARN_TOTAL_G} stroke={COLORS.warn} strokeDasharray="5 4" label={{ value: "1단계·주의", position: "insideTopLeft", fill: COLORS.warnText, fontSize: 11 }} />
