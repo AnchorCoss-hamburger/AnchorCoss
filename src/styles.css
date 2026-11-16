@@ -2352,3 +2352,37 @@ button.summary-cell:hover {
 .band-false {
   display: block; /* 숫자가 세 자리여도 이름 칸(120px)에서 잘리지 않게 줄을 나눔 */
 }
+
+/* ---------- 에러 경계 (화면이 터졌을 때 안내) ---------- */
+.fatal {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--sp-5);
+  background: var(--bg);
+}
+.fatal-card {
+  max-width: 560px;
+  display: grid;
+  gap: var(--sp-3);
+}
+.fatal-card h1 {
+  font-size: var(--fs-title);
+}
+.fatal-detail {
+  margin: 0;
+  padding: var(--sp-3);
+  max-height: 140px;
+  overflow: auto;
+  border-radius: var(--radius-sm);
+  background: var(--st-check-bg);
+  color: var(--st-check-text);
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.fatal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
