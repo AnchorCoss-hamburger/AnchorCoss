@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { STATES, STATE_META, FLAGS } from "../logic/states.js";
 import { sortByPriority, fmtTime } from "../ui/format.js";
+import { collectionHistory } from "../sim/history.js";
+import { HOTSPOT } from "../config.js";
 
 // 목록 안에서는 짧은 상태 이름 (긴 이름은 상세·요약 카드에서)
 const SHORT = { normal: "정상", warn: "주의", danger: "위험", check: "점검" };
@@ -69,6 +71,14 @@ export function PriorityList({ stations, events = [], selectedId, onSelect }) {
                     <span className="prio-name">
                       {s.name.replace("빗물받이 ", "")}
                       {raining && <span className="tag is-rain">우천</span>}
+                      {collectionHistory(s)?.hotspot && (
+                        <span
+                          className="tag is-hot"
+                          title={`최근 ${HOTSPOT.DAYS}일 수거 ${collectionHistory(s).total}회 — 상습 주의 구간 (가상 기록)`}
+                        >
+                          상습
+                        </span>
+                      )}
                     </span>
                     <MiniBadge state={j.state} />
                     <span className="prio-score">

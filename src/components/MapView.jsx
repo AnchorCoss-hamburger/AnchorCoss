@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState } from "react";
 import { MAP_CENTER } from "../config.js";
 import { STATES, STATE_META } from "../logic/states.js";
+import { collectionHistory } from "../sim/history.js";
 
 const TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 const TILE_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
@@ -95,7 +96,8 @@ export function MapView({
       const selected = s.id === selectedId;
       const el = m.getElement()?.querySelector(".map-marker");
       if (el) {
-        el.className = `map-marker st-${st}${selected ? " is-selected" : ""}${st === STATES.DANGER ? " is-alert" : ""}`;
+        const hot = collectionHistory(s)?.hotspot;
+        el.className = `map-marker st-${st}${selected ? " is-selected" : ""}${st === STATES.DANGER ? " is-alert" : ""}${hot ? " is-hot" : ""}`;
         el.textContent = STATE_META[st].icon;
       }
       const badge = m.getElement()?.querySelector(".map-order");
@@ -179,6 +181,10 @@ export function MapView({
               {SHORT[st]}
             </li>
           ))}
+          <li title="최근 30일 동안 자주 수거한 지점 (가상 기록)">
+            <span className="legend-dot is-hot" aria-hidden="true" />
+            상습 구간
+          </li>
         </ul>
       </div>
       {children}

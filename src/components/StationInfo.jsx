@@ -4,6 +4,20 @@
 import { useEffect, useRef } from "react";
 import { STATE_META } from "../logic/states.js";
 import { getScenario } from "../sim/scenario.js";
+import { collectionHistory } from "../sim/history.js";
+import { HOTSPOT } from "../config.js";
+
+/** 최근 30일 일별 수거 횟수 막대 (오래된 날 → 오늘) */
+function DailyBars({ daily }) {
+  const max = Math.max(1, ...daily);
+  return (
+    <div className="daily-bars" role="img" aria-label={`최근 ${daily.length}일 일별 수거 횟수`}>
+      {daily.map((n, i) => (
+        <span key={i} className="daily-bar" style={{ height: `${(n / max) * 100}%` }} title={`${daily.length - i - 1}일 전: ${n}회`} />
+      ))}
+    </div>
+  );
+}
 
 const TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 const TILE_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
@@ -68,6 +82,7 @@ export function StationInfo({ station }) {
   } catch {
     scenario = null;
   }
+  const hist = collectionHistory(station);
   return (
     <div className="station-info">
       <MiniMap lat={station.lat} lng={station.lng} state={station.judgement.state} />
@@ -87,6 +102,21 @@ export function StationInfo({ station }) {
           <dt>좌표</dt>
           <dd className="num">
             {station.lat.toFixed(5)}, {station.lng.toFixed(5)}
+          </dd>
+        </div>
+        <div>
+          <dt>수거 기록</dt>
+          <dd>
+            {hist ? (
+              <>
+                최근 {HOTSPOT.DAYS}일 <b className="num">{hist.total}회</b>
+                {hist.hotspot && <span className="tag is-hot info-hot">상습 주의 구간</span>}
+                <span className="muted"> · 가상 기록</span>
+                <DailyBars daily={hist.daily} />
+              </>
+            ) : (
+              <span className="muted">기록 없음 (합동 테스트부터 실제 수거를 기록)</span>
+            )}
           </dd>
         </div>
         {scenario && (

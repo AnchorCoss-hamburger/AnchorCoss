@@ -23,6 +23,12 @@ export const WARNING = Object.freeze({
   AREA_KEYWORDS: ["청주", "충청북도", "충북"], // 특보 지역 문구에 이 글자가 들어가면 우리 지역
 });
 
+// 상습 주의 구간: 최근 DAYS일 동안 MIN_COLLECTIONS번 이상 수거한 지점 (교통사고 다발 구간처럼 표시)
+export const HOTSPOT = Object.freeze({
+  DAYS: 30,
+  MIN_COLLECTIONS: 14, // 이틀에 한 번꼴. 너무 낮으면 절반이 상습이 되어 의미가 없다 (가상 24곳 중 4곳 정도)
+});
+
 // 비 예보 기반 사전 수거 권고 (기상청 초단기예보)
 export const FORECAST = Object.freeze({
   LOOKAHEAD_H: 3, // 앞으로 몇 시간 안의 비 예보를 알릴지

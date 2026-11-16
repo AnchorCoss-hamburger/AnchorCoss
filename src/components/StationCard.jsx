@@ -15,7 +15,8 @@ import {
   sparkPath,
 } from "../ui/format.js";
 import { STATES, STATE_META } from "../logic/states.js";
-import { TH } from "../config.js";
+import { TH, HOTSPOT } from "../config.js";
+import { collectionHistory } from "../sim/history.js";
 
 const SPARK_W = 260;
 const SHORT = { normal: "정상", warn: "주의", danger: "위험", check: "점검" };
@@ -105,6 +106,7 @@ export function StationCard({ station, now: simNow, onClose, onDetail }) {
   // 실물 지점은 실제 시계, 가상 지점은 시뮬레이터 시계 기준
   const now = station.clockNow ?? simNow;
   const rain = station.latest?.rainMm;
+  const hist = collectionHistory(station);
 
   return (
     <aside
@@ -150,6 +152,19 @@ export function StationCard({ station, now: simNow, onClose, onDetail }) {
         <div>
           <dt>마지막 수신</dt>
           <dd className={`num${j.state === STATES.CHECK ? " tx-check" : ""}`}>{fmtAgo(now, station.latest?.ts)}</dd>
+        </div>
+        <div className="is-wide">
+          <dt>최근 {HOTSPOT.DAYS}일 수거</dt>
+          <dd>
+            {hist ? (
+              <>
+                <span className="num">{hist.total}회</span>
+                {hist.hotspot && <span className="tag is-hot station-card-hot">상습 주의 구간</span>}
+              </>
+            ) : (
+              <span className="muted">기록 없음 (합동 테스트부터 기록)</span>
+            )}
+          </dd>
         </div>
       </dl>
 
