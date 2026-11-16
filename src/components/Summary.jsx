@@ -39,12 +39,11 @@ export function Summary({ stations, source, onSource, state, onState }) {
       <div className="summary-grid">
         {ORDER.map((st) => {
           const n = counts[st];
-          const alert = st === STATES.DANGER && n > 0;
           const on = state === st;
           return (
             <button
               key={st}
-              className={`summary-cell st-${st}${alert ? " pulse" : ""}${on ? " is-on" : ""}${state && !on ? " is-dim" : ""}`}
+              className={`summary-cell st-${st}${on ? " is-on" : ""}${state && !on ? " is-dim" : ""}`}
               aria-pressed={on}
               onClick={() => onState(on ? null : st)}
               title={on ? "필터 해제" : `${SHORT[st]} 지점만 보기`}
