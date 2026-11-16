@@ -2019,3 +2019,41 @@ button.summary-cell:hover {
   display: grid;
   gap: 2px;
 }
+
+/* ---------- 비 예보 기반 사전 수거 권고 (위험 알림 아래 한 줄) ---------- */
+.rain-advisory {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-1) var(--sp-3);
+  padding: 6px var(--sp-5);
+  background: var(--accent-soft);
+  border-bottom: 1px solid var(--border);
+  border-left: 6px solid var(--accent);
+  font-size: var(--fs-small);
+}
+.rain-advisory-title {
+  color: var(--accent);
+  white-space: nowrap;
+}
+.rain-advisory-mm {
+  font-weight: 600;
+}
+.rain-advisory-demo {
+  margin-left: 4px;
+}
+.rain-advisory-text {
+  color: var(--text);
+}
+.alert-chip.is-warn {
+  color: var(--st-warn-text);
+  border-color: rgba(217, 119, 6, 0.4);
+}
+.alert-chip.is-warn:hover {
+  border-color: var(--st-warn);
+}
+@media (max-width: 700px) {
+  .rain-advisory {
+    padding: 6px var(--sp-3);
+  }
+}

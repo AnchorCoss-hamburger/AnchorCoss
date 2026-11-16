@@ -17,6 +17,13 @@ export const MAP_CENTER = { lat: REGION.lat, lng: REGION.lng, zoom: 15 };
 // 수거 경로의 출발·복귀 지점 (임시: 충북대 동쪽 도로변. 실제 차고지·청소 사무소가 정해지면 교체)
 export const DEPOT = { name: "출발지", lat: REGION.lat + 0.0012, lng: REGION.lng + 0.0045 };
 
+// 비 예보 기반 사전 수거 권고 (기상청 초단기예보)
+export const FORECAST = Object.freeze({
+  LOOKAHEAD_H: 3, // 앞으로 몇 시간 안의 비 예보를 알릴지
+  DEMO_LEAD_MIN: 60, // 시뮬레이션 "비 예보(시연)": 몇 분 뒤 비가 온다고 할지 (시뮬레이션 시각 기준)
+  DEMO_RAIN_MM: 10, // 시연용 예보 강수량 (mm/h). 그 시각이 되면 강우 수동 입력으로 실제로 비가 내린다
+});
+
 export const ROUTE = Object.freeze({
   DEBOUNCE_MS: 1500, // 수거 대상이 바뀐 뒤 이 시간 동안 더 안 바뀌면 경로를 다시 계산 (OSRM 호출 수 절약)
   STRAIGHT_SPEED_KMH: 20, // 직선 대체 경로의 예상 시간 계산용 평균 속도 (시내 주행 가정)

@@ -9,7 +9,7 @@ const RAIN_MAX = 30;
  * 시연 제어 (전체 지점에 적용): 재생/일시정지 · 배속 · 데이터 모드(시뮬레이션/실시간) · 처음부터
  * 지점 하나를 조작하는 시나리오 변경·수거는 상세 패널(DrainDetail)에 있다.
  */
-export function ScenarioControls({ sim, mode, onMode, weather, feed, realStation }) {
+export function ScenarioControls({ sim, mode, onMode, weather, feed, realStation, rainDemo = false, onRainDemo }) {
   const manualRain = sim.rainOverride != null;
   const [lastRain, setLastRain] = useState(15); // 체크를 껐다 켜도 마지막 값 유지
 
@@ -99,6 +99,10 @@ export function ScenarioControls({ sim, mode, onMode, weather, feed, realStation
                 <span className="control-value num">{sim.rainOverride}mm/h</span>
               </>
             )}
+            <label className="control-check" title="1시간 뒤 비가 온다는 예보를 띄우고, 그 시각이 되면 실제로 비가 내립니다 (시연용)">
+              <input type="checkbox" checked={rainDemo} onChange={(e) => onRainDemo?.(e.target.checked)} />
+              비 예보(시연)
+            </label>
           </>
         )}
       </div>

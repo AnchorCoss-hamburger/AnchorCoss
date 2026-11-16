@@ -2,15 +2,37 @@
 // 인증키(KMA_SERVICE_KEY)는 서버에서만 쓰고 브라우저로 보내지 않는다.
 // 개발: vite.config.js의 devApi()가 연결 / 배포: Vercel이 서버 함수로 실행.
 //
-// 응답 200: { ok: true, region, lat, lng, nx, ny, baseDate, baseTime, rainMm, pty, ptyLabel, tempC, humidity, windMs, fetchedAt, cached?, stale?, warning? }
+// 응답 200: { ok: true, region, lat, lng, nx, ny, baseDate, baseTime, rainMm, pty, ptyLabel, tempC, humidity, windMs, fetchedAt, cached?, stale?, warning?,
+//            forecast: { baseDate, baseTime, hours: [{ ts, rainMm, pty }] } | null,   ← 초단기예보 (앞으로 6시간)
+//            todayRainMm: number | null,                                           ← 오늘 누적 강수량
+//            extraWarning? }   예보·누적 강수량은 실패해도 실황 응답은 그대로 준다 (extraWarning에 이유)
 // 응답 4xx/5xx: { ok: false, error, code? }
 
-import { fetchNcst, latLngToGrid } from "../lib/kma.js";
+import { fetchNcst, fetchFcst, fetchTodayRain, latLngToGrid } from "../lib/kma.js";
 import { REGION } from "../src/config.js";
 
 const TTL_MS = 10 * 60 * 1000; // 실황은 1시간 단위라 10분 캐시면 충분 (호출 수 제한 대비)
 const cache = new Map(); // "nx,ny" → { at, data }
 let latest = null; // 가장 최근에 받은 대상 지역(REGION) 실황
+const rainByHour = new Map(); // 오늘 누적 강수량용 시각별 실황 강수량 (지난 시각 값은 바뀌지 않음)
+
+/** 예보·오늘 누적 강수량 (각각 실패해도 나머지는 준다) */
+async function extras({ key, nx, ny }) {
+  const out = { forecast: null, todayRainMm: null };
+  const warn = [];
+  try {
+    out.forecast = await fetchFcst({ key, nx, ny });
+  } catch (e) {
+    warn.push(`예보: ${e.message}`);
+  }
+  try {
+    out.todayRainMm = await fetchTodayRain({ key, nx, ny, cache: rainByHour });
+  } catch (e) {
+    warn.push(`누적 강수량: ${e.message}`);
+  }
+  if (warn.length) out.extraWarning = warn.join(" / ");
+  return out;
+}
 
 /** 센서 수신 시 강우를 붙이기 위한 최신 실황 (1시간 넘게 지난 값은 쓰지 않음) */
 export function peekLatestWeather() {
@@ -40,7 +62,7 @@ export default async function handler(req, res) {
 
   try {
     const w = await fetchNcst({ key, nx, ny });
-    const data = { ok: true, region: REGION.name, lat, lng, ...w, fetchedAt: Date.now() };
+    const data = { ok: true, region: REGION.name, lat, lng, ...w, ...(await extras({ key, nx, ny })), fetchedAt: Date.now() };
     cache.set(ck, { at: Date.now(), data });
     if (lat === REGION.lat && lng === REGION.lng) latest = data;
     res.setHeader("Cache-Control", "s-maxage=600, stale-while-revalidate=300");
@@ -55,5 +77,6 @@ export default async function handler(req, res) {
 /** 테스트용: 캐시 비우기 */
 export function _clearCache() {
   cache.clear();
+  rainByHour.clear();
   latest = null;
 }

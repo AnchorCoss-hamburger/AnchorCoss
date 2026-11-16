@@ -284,3 +284,18 @@ export function forecastLine({ ts, totalG, rateGPerMin, dangerG, horizonMin = 30
     crossTs: crosses ? ts + e.minutes * 60000 : null,
   };
 }
+
+/**
+ * 예보에서 다음 비 시각 찾기 (지금 시간대 포함, withinH시간 안).
+ * 비로 보는 기준: 강수 형태(PTY)가 있거나 1시간 강수량이 minMm 이상.
+ * @param {{ ts:number, rainMm:number, pty:number }[]} hours 초단기예보 시각별 (ts = 그 1시간의 시작)
+ * @returns {null | { ts:number, rainMm:number }}
+ */
+export function nextRain(hours, nowTs, { minMm = 1, withinH = 3 } = {}) {
+  const until = nowTs + withinH * 3600e3;
+  const h = (hours ?? [])
+    .filter((x) => x.ts + 3600e3 > nowTs && x.ts <= until)
+    .sort((a, b) => a.ts - b.ts)
+    .find((x) => x.pty !== 0 || x.rainMm >= minMm);
+  return h ? { ts: h.ts, rainMm: h.rainMm } : null;
+}

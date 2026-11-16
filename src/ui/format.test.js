@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { countByState, sortByPriority, fmtAgo, fmtG, rssiLevel, toChartData, downsample, rainSegments, collectTargets, fmtDistance, fmtDuration, filterStations, fmtTime, sparkPath, fmtStage, etaToDanger, stateDurations, rainFillRates, forecastLine } from "./format.js";
+import { countByState, sortByPriority, fmtAgo, fmtG, rssiLevel, toChartData, downsample, rainSegments, collectTargets, fmtDistance, fmtDuration, filterStations, fmtTime, sparkPath, fmtStage, etaToDanger, stateDurations, rainFillRates, forecastLine, nextRain } from "./format.js";
 
 describe("downsample", () => {
   const pt = (ts, total, rain = 0) => ({ ts, total, rain });
@@ -220,5 +220,26 @@ describe("forecastLine", () => {
     expect(forecastLine({ ts: 0, totalG: 1200, rateGPerMin: 10, dangerG: 1000 })).toBeNull();
     expect(forecastLine({ ts: 0, totalG: 300, rateGPerMin: 0.2, dangerG: 1000 })).toBeNull();
     expect(forecastLine({ ts: 0, totalG: 300, rateGPerMin: null, dangerG: 1000 })).toBeNull();
+  });
+});
+
+describe("nextRain", () => {
+  const H = 3600e3;
+  const hours = [
+    { ts: 0, rainMm: 0, pty: 0 },
+    { ts: H, rainMm: 0, pty: 0 },
+    { ts: 2 * H, rainMm: 3, pty: 1 },
+    { ts: 5 * H, rainMm: 10, pty: 1 },
+  ];
+  it("가장 가까운 비 시각", () => {
+    expect(nextRain(hours, 10 * 60e3)).toEqual({ ts: 2 * H, rainMm: 3 });
+  });
+  it("withinH시간 밖이면 없음, 지금 시간대도 포함", () => {
+    expect(nextRain(hours, 0, { withinH: 1 })).toBeNull();
+    expect(nextRain(hours, 2.5 * H)).toEqual({ ts: 2 * H, rainMm: 3 });
+  });
+  it("빗방울(PTY 5)은 1mm 미만이어도 비", () => {
+    expect(nextRain([{ ts: 0, rainMm: 0.5, pty: 5 }], 0)).toEqual({ ts: 0, rainMm: 0.5 });
+    expect(nextRain([{ ts: 0, rainMm: 0, pty: 0 }], 0)).toBeNull();
   });
 });

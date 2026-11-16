@@ -14,10 +14,11 @@ import { MapView } from "./components/MapView.jsx";
 import { DrainDetail } from "./components/DrainDetail.jsx";
 import { RoutePanel } from "./components/RoutePanel.jsx";
 import { StationCard } from "./components/StationCard.jsx";
+import { RainAdvisory } from "./components/RainAdvisory.jsx";
 import { Alerts } from "./components/Toasts.jsx";
-import { collectTargets, filterStations } from "./ui/format.js";
+import { collectTargets, filterStations, nextRain } from "./ui/format.js";
 import { useHashRoute, navigate, paths } from "./ui/router.js";
-import { DEPOT } from "./config.js";
+import { DEPOT, FORECAST, TH } from "./config.js";
 
 // 실물 센서를 연결할 지점 (기본: 빗물받이 #1)
 const REAL_STATION_ID = DEFAULT_STATIONS.find((s) => s.real)?.id ?? null;
@@ -43,6 +44,30 @@ export default function App() {
     }
     // runId: "처음부터"로 시뮬레이터가 새로 만들어져도 다시 적용
   }, [live, liveRain, sim.runId, sim.setRain]);
+
+  // 비 예보 기반 사전 수거 권고
+  //  실시간: 기상청 초단기예보에서 LOOKAHEAD_H시간 안의 다음 비 (지금 비가 오고 있으면 표시 안 함 — 우천 중 표시가 대신)
+  //  시뮬레이션: "비 예보(시연)"을 켜면 DEMO_LEAD_MIN분 뒤 비 예보 → 그 시각이 되면 실제로 비가 내림(강우 수동)
+  const [demoRainAt, setDemoRainAt] = useState(null); // 시뮬레이션 시각
+  useEffect(() => setDemoRainAt(null), [live, sim.runId]);
+  useEffect(() => {
+    if (!live && demoRainAt != null && sim.now >= demoRainAt) {
+      sim.setRain(FORECAST.DEMO_RAIN_MM);
+      setDemoRainAt(null);
+    }
+  }, [live, demoRainAt, sim.now, sim.setRain]);
+  const toggleRainDemo = useCallback(
+    (on) => setDemoRainAt(on ? sim.now + FORECAST.DEMO_LEAD_MIN * 60000 : null),
+    [sim.now],
+  );
+  let advisory = null;
+  if (live) {
+    const now = Date.now();
+    const n = nextRain(weather.data?.forecast?.hours, now, { minMm: TH.RAIN_MM_H, withinH: FORECAST.LOOKAHEAD_H });
+    if (n && !((weather.data?.rainMm ?? 0) >= TH.RAIN_MM_H)) advisory = { ...n, now };
+  } else if (demoRainAt != null) {
+    advisory = { ts: demoRainAt, rainMm: FORECAST.DEMO_RAIN_MM, now: sim.now, demo: true };
+  }
 
   useEffect(() => {
     sim.setRealStations(live && REAL_STATION_ID ? [REAL_STATION_ID] : []);
@@ -83,9 +108,12 @@ export default function App() {
           feed={feed}
           realStation={realStation}
           page={page.page}
+          rainDemo={demoRainAt != null}
+          onRainDemo={toggleRainDemo}
         />
         {/* key=runId: "처음부터"를 누르면 알림 닫기 기록·토스트도 초기화 */}
         <Alerts key={sim.runId} stations={sim.stations} events={sim.events} onSelect={openStation} />
+        <RainAdvisory advisory={advisory} stations={sim.stations} onSelect={openStation} />
       </div>
 
       {page.page === "main" && (

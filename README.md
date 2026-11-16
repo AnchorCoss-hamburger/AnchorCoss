@@ -65,7 +65,12 @@ npm run scenario  # 판정 성능 비교표 (제안 방식 vs 단순 임계값)
 - 우천 장면 시연은 시뮬레이션 모드에서 (실시간 모드는 실제 날씨를 쓰므로 맑으면 강우 0).
 
 - 대상 지역: `src/config.js`의 `REGION` (청주 충북대 부근, 기상청 격자 68·106은 위경도로 자동 계산)
-- 서버 API: `GET /api/weather[?lat=&lng=]` → `{ ok, region, nx, ny, baseDate, baseTime, rainMm, pty, ptyLabel, tempC, humidity, windMs }`
+- 서버 API: `GET /api/weather[?lat=&lng=]` → `{ ok, region, nx, ny, baseDate, baseTime, rainMm, pty, ptyLabel, tempC, humidity, windMs, forecast, todayRainMm }`
+  - `forecast`: 초단기예보(앞으로 6시간) `{ baseDate, baseTime, hours: [{ ts, rainMm, pty }] }` — 같은 "단기예보 조회서비스" 키로 동작
+  - `todayRainMm`: 오늘 01시~가장 최근 관측까지 1시간 강수량 합계 (시각별로 저장해 두고 새 시각만 조회)
+  - 예보·누적 강수량이 실패해도 실황은 그대로 응답 (`extraWarning`에 이유)
+- **비 예보 기반 사전 수거 권고**: 3시간 안에 비 예보가 있으면 위험 알림 아래 파란 줄로 "주의 N곳은 비 오기 전 수거 권장"을 띄운다 (지금 비가 오고 있으면 표시 안 함). 시뮬레이션 모드에서는 상단 **비 예보(시연)** 를 켜면 1시간 뒤 비 예보가 뜨고, 그 시각이 되면 실제로 비(10mm/h)가 내린다 (`src/config.js` `FORECAST`)
+- 호우 특보 연동은 보류: 별도 서비스("기상청_기상특보 조회서비스") 활용 신청과 응답 형식 확인이 필요
 - `/api/weather`는 `npm run dev`(Vite 미들웨어)와 Vercel 배포에서만 동작합니다. `npm run preview`에서는 실시간 모드가 "연결 실패"로 표시됩니다.
 
 ## 센서 수신 서버 (로컬 전용)
