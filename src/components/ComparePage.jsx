@@ -8,42 +8,13 @@ import { SCENARIOS } from "../sim/scenario.js";
 import { STATES, STATE_META } from "../logic/states.js";
 import { TH } from "../config.js";
 import { COLORS } from "../ui/colors.js";
-import { stateSegments } from "../ui/format.js";
+import { StateBand } from "./StateBand.jsx";
+import { RealCompare } from "./RealCompare.jsx";
 
 const SEEDS = [1, 2, 3, 4, 5]; // 표는 난수 5번 평균 (npm run scenario와 같음)
-const SHORT = { normal: "정상", warn: "주의", danger: "위험", check: "점검" };
 const pct = (v) => `${(v * 100).toFixed(1)}%`;
 
-/** 시간에 따른 상태 색 띠 한 줄 */
-function StateBand({ label, states, changes, falseCount, highlight }) {
-  const segs = stateSegments(states);
-  const n = states.length || 1;
-  return (
-    <div className={`band-row${highlight ? " is-ours" : ""}`}>
-      <div className="band-label">
-        {label}
-        <div className="band-meta num">
-          변경 {changes}회
-          {falseCount != null && (
-            <b className={falseCount > 0 ? "tx-danger" : "tx-normal"}> · 오경보 {falseCount}</b>
-          )}
-        </div>
-      </div>
-      <div className="band-track" role="img" aria-label={`${label}: 상태 변경 ${changes}회`}>
-        {segs.map((s, i) => (
-          <span
-            key={i}
-            className={`band-seg st-${s.state}`}
-            style={{ width: `${((s.end - s.start) / n) * 100}%` }}
-            title={`${SHORT[s.state]}`}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-export function ComparePage() {
+function VirtualCompare() {
   const [scenarioId, setScenarioId] = useState("gradual");
   const run = useMemo(() => runScenario(scenarioId, { seed: 1 }), [scenarioId]);
   // 전체 시나리오 × 난수 5번 평균 (처음 한 번만 계산)
@@ -222,6 +193,49 @@ export function ComparePage() {
           <p className="muted compare-note">⚠ 가상 시나리오 기준이며 실제 환경 정확도가 아닙니다 (합동 테스트 후 재측정).</p>
         </section>
       </div>
+    </div>
+  );
+}
+
+const MODE_KEY = "anchorcoss.compareMode";
+const MODES = [
+  { id: "virtual", label: "가상 시나리오" },
+  { id: "real", label: "실측 기록" },
+];
+
+/** 판정 비교: 가상 시나리오(지금) / 실측 기록(합동 테스트 후) 전환 */
+export function ComparePage() {
+  const [mode, setMode] = useState(() => {
+    try {
+      return localStorage.getItem(MODE_KEY) === "real" ? "real" : "virtual";
+    } catch {
+      return "virtual";
+    }
+  });
+  const pick = (m) => {
+    setMode(m);
+    try {
+      localStorage.setItem(MODE_KEY, m);
+    } catch {
+      /* 저장 못 해도 동작에는 지장 없음 */
+    }
+  };
+  return (
+    <div className="compare">
+      <div className="list-tabs compare-mode" role="tablist" aria-label="비교 데이터">
+        {MODES.map((m) => (
+          <button
+            key={m.id}
+            role="tab"
+            aria-selected={mode === m.id}
+            className={`list-tab${mode === m.id ? " is-active" : ""}`}
+            onClick={() => pick(m.id)}
+          >
+            {m.label}
+          </button>
+        ))}
+      </div>
+      {mode === "real" ? <RealCompare /> : <VirtualCompare />}
     </div>
   );
 }

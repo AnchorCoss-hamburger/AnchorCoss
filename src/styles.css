@@ -2305,3 +2305,50 @@ button.summary-cell:hover {
   border-radius: 1px;
   background: var(--text-mute);
 }
+
+/* 판정 비교 — 가상/실측 전환 · 실측 기록 모드 (RealCompare.jsx) */
+.compare-mode {
+  margin: 0;
+}
+.control-input {
+  height: 32px;
+  padding: 0 var(--sp-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-small);
+}
+.control-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.real-field {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  font-size: var(--fs-small);
+}
+.real-empty {
+  padding: var(--sp-5) 0;
+  text-align: center;
+}
+.real-seg-table td {
+  padding: 4px var(--sp-1);
+}
+.real-g {
+  width: 90px;
+  text-align: right;
+}
+.real-seg-actions {
+  display: flex;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+.band-seg.st-none {
+  background: repeating-linear-gradient(135deg, var(--bg) 0 4px, var(--border) 4px 6px);
+}
+.band-false {
+  display: block; /* 숫자가 세 자리여도 이름 칸(120px)에서 잘리지 않게 줄을 나눔 */
+}
