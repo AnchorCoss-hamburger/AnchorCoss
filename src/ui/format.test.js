@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { countByState, sortByPriority, fmtAgo, fmtG, rssiLevel, toChartData, downsample, rainSegments, collectTargets, fmtDistance, fmtDuration, filterStations, fmtTime, sparkPath, fmtStage, etaToDanger, stateDurations, rainFillRates, forecastLine, nextRain } from "./format.js";
+import { countByState, sortByPriority, fmtAgo, fmtG, rssiLevel, toChartData, downsample, rainSegments, collectTargets, fmtDistance, fmtDuration, filterStations, fmtTime, sparkPath, fmtStage, etaToDanger, stateDurations, rainFillRates, forecastLine, nextRain, stateSegments } from "./format.js";
 
 describe("downsample", () => {
   const pt = (ts, total, rain = 0) => ({ ts, total, rain });
@@ -241,5 +241,16 @@ describe("nextRain", () => {
   it("빗방울(PTY 5)은 1mm 미만이어도 비", () => {
     expect(nextRain([{ ts: 0, rainMm: 0.5, pty: 5 }], 0)).toEqual({ ts: 0, rainMm: 0.5 });
     expect(nextRain([{ ts: 0, rainMm: 0, pty: 0 }], 0)).toBeNull();
+  });
+});
+
+describe("stateSegments", () => {
+  it("이어지는 같은 상태를 한 구간으로", () => {
+    expect(stateSegments(["normal", "normal", "warn", "normal"])).toEqual([
+      { state: "normal", start: 0, end: 2 },
+      { state: "warn", start: 2, end: 3 },
+      { state: "normal", start: 3, end: 4 },
+    ]);
+    expect(stateSegments([])).toEqual([]);
   });
 });

@@ -4,6 +4,7 @@ import { paths } from "../ui/router.js";
 const NAV = [
   { page: "main", label: "대시보드", href: paths.main() },
   { page: "route", label: "수거 경로", href: paths.route() },
+  { page: "compare", label: "판정 비교", href: paths.compare() },
 ];
 
 const fmtClock = (ts) =>

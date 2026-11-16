@@ -16,6 +16,7 @@ import { RoutePanel } from "./components/RoutePanel.jsx";
 import { StationCard } from "./components/StationCard.jsx";
 import { RainAdvisory } from "./components/RainAdvisory.jsx";
 import { WarningBanner } from "./components/WarningBanner.jsx";
+import { ComparePage } from "./components/ComparePage.jsx";
 import { Alerts } from "./components/Toasts.jsx";
 import { collectTargets, filterStations, nextRain } from "./ui/format.js";
 import { useHashRoute, navigate, paths } from "./ui/router.js";
@@ -188,6 +189,12 @@ export default function App() {
               <p className="muted">지점을 찾을 수 없습니다 ({page.id}).</p>
             </section>
           )}
+        </main>
+      )}
+
+      {page.page === "compare" && (
+        <main className="page is-narrow compare-page">
+          <ComparePage />
         </main>
       )}
 

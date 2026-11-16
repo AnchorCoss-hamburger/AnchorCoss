@@ -2093,3 +2093,181 @@ button.summary-cell:hover {
     padding: 8px var(--sp-3);
   }
 }
+
+/* ---------- 판정 비교 페이지 ---------- */
+.compare {
+  display: grid;
+  gap: var(--sp-3);
+}
+.compare-page {
+  max-width: 1440px;
+  width: 100%;
+  margin: 0 auto;
+}
+.compare-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: var(--sp-4);
+  align-items: center;
+}
+.compare-hero h2 {
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+.compare-kpis {
+  display: grid;
+  gap: var(--sp-2);
+}
+.kpi {
+  display: grid;
+  gap: 2px;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+}
+.kpi-label {
+  color: var(--text-mute);
+  font-size: 12px;
+}
+.kpi-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-5);
+  font-size: var(--fs-small);
+}
+.kpi-row b {
+  font-size: 22px;
+}
+.compare-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-4);
+  margin-bottom: var(--sp-2);
+}
+.compare-head .block-title {
+  margin: 0;
+}
+.compare-desc {
+  font-size: var(--fs-small);
+}
+.compare-chart {
+  height: 200px;
+}
+.bands {
+  display: grid;
+  gap: 8px;
+  margin-top: var(--sp-2);
+  padding-right: 16px; /* 그래프 오른쪽 여백과 같게 */
+}
+.band-row {
+  display: grid;
+  /* 이름 칸 120px = 그래프 왼쪽 여백 68px + Y축 52px → 띠의 시간축이 그래프와 맞는다 (ComparePage.jsx) */
+  grid-template-columns: 120px minmax(0, 1fr);
+  align-items: center;
+  font-size: var(--fs-small);
+}
+.band-label {
+  padding-right: var(--sp-2);
+  color: var(--text-sub);
+  font-weight: 600;
+  text-align: right;
+  line-height: 1.25;
+}
+.band-row.is-ours .band-label {
+  color: var(--accent);
+}
+.band-track {
+  display: flex;
+  height: 22px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--bg);
+}
+.band-seg.st-normal { background: var(--st-normal); }
+.band-seg.st-warn { background: var(--st-warn); }
+.band-seg.st-danger { background: var(--st-danger); }
+.band-seg.st-check { background: var(--st-check); }
+.band-meta {
+  color: var(--text-mute);
+  font-size: 11px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+.band-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1) var(--sp-4);
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-sub);
+  font-size: 12px;
+}
+.band-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  vertical-align: middle;
+}
+.band-dot.st-normal { background: var(--st-normal); }
+.band-dot.st-warn { background: var(--st-warn); }
+.band-dot.st-danger { background: var(--st-danger); }
+.band-dot.st-check { background: var(--st-check); }
+.compare-bottom {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+  gap: var(--sp-3);
+}
+.compare-list {
+  margin: 0;
+  padding-left: 1.1em;
+  display: grid;
+  gap: 4px;
+  font-size: var(--fs-small);
+}
+.compare-note {
+  margin-top: var(--sp-2);
+  font-size: 12px;
+}
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-small);
+}
+.compare-table th {
+  padding: 4px var(--sp-2);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-mute);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+}
+.compare-table td {
+  padding: 4px var(--sp-2);
+  border-bottom: 1px solid var(--border);
+}
+.compare-table .num-col {
+  text-align: right;
+}
+.compare-table tbody tr {
+  cursor: pointer;
+}
+.compare-table tbody tr:hover,
+.compare-table tbody tr.is-on {
+  background: var(--accent-soft);
+}
+@media (max-width: 1099px) {
+  .compare-hero,
+  .compare-bottom {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .bands {
+    padding-left: 0;
+  }
+  .band-row {
+    grid-template-columns: 96px minmax(0, 1fr);
+    margin-left: 0;
+  }
+}

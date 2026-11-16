@@ -299,3 +299,14 @@ export function nextRain(hours, nowTs, { minMm = 1, withinH = 3 } = {}) {
     .find((x) => x.pty !== 0 || x.rainMm >= minMm);
   return h ? { ts: h.ts, rainMm: h.rainMm } : null;
 }
+
+/** 상태 배열 → 같은 상태가 이어지는 구간 [{ state, start, end }] (end는 포함하지 않음) */
+export function stateSegments(states) {
+  const out = [];
+  states.forEach((s, i) => {
+    const last = out[out.length - 1];
+    if (last && last.state === s) last.end = i + 1;
+    else out.push({ state: s, start: i, end: i + 1 });
+  });
+  return out;
+}
