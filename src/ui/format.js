@@ -264,3 +264,23 @@ export function rainFillRates(history, { rainMmH, maxG = 5000, gapMs = 30_000, d
   const rate = (x) => (x.ms >= minMin * 60000 ? x.g / (x.ms / 60000) : null);
   return { rain: rate(acc.rain), dry: rate(acc.dry), rainMin: acc.rain.ms / 60000, dryMin: acc.dry.ms / 60000 };
 }
+
+/**
+ * 그래프 예측선: 지금 값에서 지금 속도로 직선을 그린다 (최대 horizonMin분 앞까지).
+ * 수거 기준에 horizonMin분 안에 닿으면 그 지점에서 멈추고 crossTs를 준다.
+ * 그릴 수 없으면(속도 없음·늘지 않음·이미 초과·값 없음) null.
+ * @returns {null | { fromTs, fromG, toTs, toG, crossTs: number|null }}
+ */
+export function forecastLine({ ts, totalG, rateGPerMin, dangerG, horizonMin = 30, minRate = 1 }) {
+  const e = etaToDanger(totalG, rateGPerMin, dangerG, { minRate });
+  if (e.kind !== "eta" || ts == null) return null;
+  const min = Math.min(e.minutes, horizonMin);
+  const crosses = e.minutes <= horizonMin;
+  return {
+    fromTs: ts,
+    fromG: totalG,
+    toTs: ts + min * 60000,
+    toG: crosses ? dangerG : totalG + rateGPerMin * min,
+    crossTs: crosses ? ts + e.minutes * 60000 : null,
+  };
+}

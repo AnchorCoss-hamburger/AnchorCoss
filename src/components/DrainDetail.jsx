@@ -1,12 +1,24 @@
 // 지점 상세 (DESIGN.md 5장 DrainDetail)
-// 머리: 이름·상태·플래그·조작 / 숫자 카드 한 줄 / 게이지 | 중량 그래프 / 판정 근거·통신 | 상태 전환 기록
+// 머리: 이름·상태·플래그·조작 / 숫자 카드 한 줄 / 게이지 | 중량 그래프(예측선) / 상태 비율 | 우천 영향
+// / 판정 근거·통신 | 상태 전환 기록 | 지점 정보·미니 지도
 import { StateBadge, FlagTags } from "./StateBadge.jsx";
 import { LoadCellGauge } from "./LoadCellGauge.jsx";
 import { WeightChart } from "./WeightChart.jsx";
 import { CommStatus } from "./CommStatus.jsx";
 import { Timeline } from "./Timeline.jsx";
+import { StationInfo } from "./StationInfo.jsx";
 import { SCENARIOS } from "../sim/scenario.js";
-import { fmtG, fmtAgo, fmtStage, stateDurations, rainFillRates } from "../ui/format.js";
+import {
+  fmtG,
+  fmtAgo,
+  fmtStage,
+  fmtHM,
+  fmtDuration,
+  stateDurations,
+  rainFillRates,
+  etaToDanger,
+  forecastLine,
+} from "../ui/format.js";
 import { TH } from "../config.js";
 import { STATES, STATE_META } from "../logic/states.js";
 
@@ -68,7 +80,7 @@ const fmtRateShort = (v) => (v == null ? "—" : v < 1 ? "거의 없음" : `분�
 function RainCompare({ history }) {
   const r = rainFillRates(history, { rainMmH: TH.RAIN_MM_H, maxG: TH.MAX_VALID_G });
   const max = Math.max(1, r.rain ?? 0, r.dry ?? 0);
-  const bar = (v) => `${Math.max(2, (Math.max(0, v ?? 0) / max) * 100)}%`;
+  const bar = (v) => (v == null ? "0%" : `${Math.max(2, (Math.max(0, v) / max) * 100)}%`); // 값이 없으면 막대도 없음
   let msg;
   if (r.rain == null && r.dry == null) msg = "비교할 데이터가 아직 부족합니다 (각각 5분 이상 필요).";
   else if (r.rain == null) msg = "최근 1시간 동안 비가 온 구간이 짧거나 없어 비교할 수 없습니다.";
@@ -110,6 +122,25 @@ export function DrainDetail({ station, now, onCollect, onScenario }) {
   const m = j.metrics ?? {};
   const rain = station.latest?.rainMm;
   const clock = station.clockNow ?? now; // 실물 지점은 실제 시계, 가상 지점은 시뮬레이터 시계
+  const checking = j.state === STATES.CHECK;
+  // 수거 기준 도달 예상 (지금 속도가 이어진다고 가정한 직선 예측) — 점검 필요면 하지 않음
+  const eta = checking ? { kind: "unknown" } : etaToDanger(m.totalG, m.rateGPerMin, TH.DANGER_TOTAL_G);
+  const forecast = checking
+    ? null
+    : forecastLine({
+        ts: station.latest?.ts,
+        totalG: m.totalG,
+        rateGPerMin: m.rateGPerMin,
+        dangerG: TH.DANGER_TOTAL_G,
+      });
+  const etaLabel =
+    eta.kind === "over"
+      ? "이미 초과"
+      : eta.kind === "eta"
+        ? `${fmtDuration(eta.minutes * 60)} 뒤`
+        : eta.kind === "flat"
+          ? "늘지 않음"
+          : "—";
 
   return (
     <section className={`card detail is-${j.state}`} aria-label={`${station.name} 상세`}>
@@ -171,6 +202,17 @@ export function DrainDetail({ station, now, onCollect, onScenario }) {
           <dt>증가 속도</dt>
           <dd className="num">{fmtRate(m.rateGPerMin)}</dd>
         </div>
+        <div className="stat" title="현재 증가 속도가 이어진다고 가정한 예상">
+          <dt>수거 기준 도달 예상</dt>
+          <dd
+            className={`num${eta.kind === "over" ? " tx-danger" : eta.kind === "eta" && eta.minutes <= 30 ? " tx-warn" : ""}`}
+          >
+            {etaLabel}
+            {eta.kind === "eta" && station.latest && (
+              <span className="stat-sub"> ({fmtHM(station.latest.ts + eta.minutes * 60000)})</span>
+            )}
+          </dd>
+        </div>
         <div className="stat">
           <dt>강우</dt>
           <dd className="num">{rain == null ? "—" : `${rain}mm/h`}</dd>
@@ -189,7 +231,7 @@ export function DrainDetail({ station, now, onCollect, onScenario }) {
         </div>
         <div className="detail-block">
           <h3 className="block-title">중량 변화 (최근 1시간)</h3>
-          <WeightChart history={station.history} transitions={station.transitions} />
+          <WeightChart history={station.history} transitions={station.transitions} forecast={forecast} />
         </div>
       </div>
 
@@ -205,8 +247,8 @@ export function DrainDetail({ station, now, onCollect, onScenario }) {
         </div>
       </div>
 
-      {/* 판정 근거·통신 | 상태 전환 기록 */}
-      <div className="detail-row">
+      {/* 판정 근거·통신 | 상태 전환 기록 | 지점 정보 */}
+      <div className="detail-row is-three">
         <div className="detail-block detail-info">
           <div>
             <h3 className="block-title">판정 근거</h3>
@@ -229,6 +271,10 @@ export function DrainDetail({ station, now, onCollect, onScenario }) {
         <div className="detail-block">
           <h3 className="block-title">상태 전환 기록</h3>
           <Timeline transitions={station.transitions} />
+        </div>
+        <div className="detail-block">
+          <h3 className="block-title">지점 정보</h3>
+          <StationInfo station={station} />
         </div>
       </div>
     </section>

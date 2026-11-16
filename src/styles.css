@@ -908,7 +908,7 @@ button.summary-cell:hover {
 
 .detail-stats {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: var(--sp-2);
   margin: 0;
 }
@@ -943,6 +943,9 @@ button.summary-cell:hover {
 .detail-row.is-half {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
+.detail-row.is-three {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr);
+}
 .detail-row.is-chart {
   grid-template-columns: 260px minmax(0, 1fr);
 }
@@ -952,6 +955,7 @@ button.summary-cell:hover {
   }
   .detail-row,
   .detail-row.is-half,
+  .detail-row.is-three,
   .detail-row.is-chart {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -1105,6 +1109,11 @@ button.summary-cell:hover {
 }
 .swatch.is-thick { height: 3px; }
 .swatch.is-area { height: 10px; }
+.swatch.is-dashed {
+  border-top: 2px dashed var(--chart-total);
+  height: 0;
+  opacity: 0.6;
+}
 .swatch.is-vline {
   width: 2px;
   height: 12px;
@@ -1864,3 +1873,58 @@ button.summary-cell:hover {
   font-size: var(--fs-small);
   font-weight: 600;
 }
+
+.stat-sub {
+  color: var(--text-mute);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ---------- 상세: 지점 정보 + 미니 지도 ---------- */
+.station-info {
+  display: grid;
+  gap: var(--sp-3);
+}
+.map.mini-map {
+  height: 180px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+.info-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  font-size: var(--fs-small);
+}
+.info-list div {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: var(--sp-2);
+}
+.info-list dt {
+  color: var(--text-mute);
+}
+.info-list dd {
+  margin: 0;
+}
+
+/* ---------- 상세 페이지: 회색 여백 없이 화면 전체를 흰 배경으로 ---------- */
+.app.on-station {
+  background: var(--surface);
+}
+.app.on-station .page {
+  padding-top: var(--sp-3);
+}
+.app.on-station .page.is-narrow {
+  max-width: none;
+}
+.app.on-station .card.detail {
+  border: none;
+  border-top: 4px solid var(--st-normal); /* 상태 색 띠 */
+  border-radius: 0;
+  box-shadow: none;
+  padding: var(--sp-4) 0 0;
+}
+.app.on-station .card.detail.is-warn { border-top-color: var(--st-warn); }
+.app.on-station .card.detail.is-danger { border-top-color: var(--st-danger); box-shadow: none; }
+.app.on-station .card.detail.is-check { border-top-color: var(--st-check); opacity: 1; }

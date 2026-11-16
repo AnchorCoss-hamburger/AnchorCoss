@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { countByState, sortByPriority, fmtAgo, fmtG, rssiLevel, toChartData, downsample, rainSegments, collectTargets, fmtDistance, fmtDuration, filterStations, fmtTime, sparkPath, fmtStage, etaToDanger, stateDurations, rainFillRates } from "./format.js";
+import { countByState, sortByPriority, fmtAgo, fmtG, rssiLevel, toChartData, downsample, rainSegments, collectTargets, fmtDistance, fmtDuration, filterStations, fmtTime, sparkPath, fmtStage, etaToDanger, stateDurations, rainFillRates, forecastLine } from "./format.js";
 
 describe("downsample", () => {
   const pt = (ts, total, rain = 0) => ({ ts, total, rain });
@@ -205,5 +205,20 @@ describe("rainFillRates", () => {
     const r = rainFillRates(h, { rainMmH: 1 });
     expect(r.dry).toBeCloseTo(6, 0);
     expect(r.rain).toBeNull();
+  });
+});
+
+describe("forecastLine", () => {
+  const M = 60000;
+  it("30분 안에 기준에 닿으면 그 지점에서 멈춘다", () => {
+    expect(forecastLine({ ts: 0, totalG: 600, rateGPerMin: 20, dangerG: 1000 })).toEqual({ fromTs: 0, fromG: 600, toTs: 20 * M, toG: 1000, crossTs: 20 * M });
+  });
+  it("멀면 30분 앞까지만", () => {
+    expect(forecastLine({ ts: 0, totalG: 300, rateGPerMin: 10, dangerG: 1000 })).toEqual({ fromTs: 0, fromG: 300, toTs: 30 * M, toG: 600, crossTs: null });
+  });
+  it("그릴 수 없는 경우", () => {
+    expect(forecastLine({ ts: 0, totalG: 1200, rateGPerMin: 10, dangerG: 1000 })).toBeNull();
+    expect(forecastLine({ ts: 0, totalG: 300, rateGPerMin: 0.2, dangerG: 1000 })).toBeNull();
+    expect(forecastLine({ ts: 0, totalG: 300, rateGPerMin: null, dangerG: 1000 })).toBeNull();
   });
 });
