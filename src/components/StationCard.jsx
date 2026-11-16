@@ -1,6 +1,7 @@
 // 선택 지점 요약 카드 (메인 지도 오른쪽, 네이버 지도의 장소 카드처럼 지도 위에 띄움)
 // 가벼운 정보만 보여 주고, 그래프·타임라인 등은 "상세 보기"로 지점 상세 페이지에서 본다.
 
+import { useLayoutEffect, useRef, useState } from "react";
 import { StateBadge, FlagTags } from "./StateBadge.jsx";
 import {
   fmtAgo,
@@ -65,7 +66,40 @@ function Sparkline({ history, state }) {
   );
 }
 
+// 카드가 지도 높이를 넘치면 덜 중요한 것부터 하나씩 숨긴다 (글꼴·화면 배율이 달라도 잘리지 않게).
+// 1단계: 최근 상태 변화 → 2단계: 추세 그래프 → 3단계: 보조 문구·플래그. 숨긴 내용은 상세 페이지에 있다.
+const MAX_COMPACT = 3;
+
+// 다른 지점을 고르면 App에서 key로 카드를 새로 만들어 0단계부터 다시 맞춘다.
+function useFitLevel(ref) {
+  const [level, setLevel] = useState(0);
+  // 지도 크기가 바뀌면 처음부터 다시 맞춘다
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const box = el?.parentElement;
+    if (!box) return undefined;
+    let lastH = box.clientHeight;
+    const ro = new ResizeObserver(() => {
+      if (box.clientHeight !== lastH) {
+        lastH = box.clientHeight;
+        setLevel(0);
+      }
+    });
+    ro.observe(box);
+    return () => ro.disconnect();
+  }, [ref]);
+  // 그린 뒤 넘치면 한 단계 더 줄인다 (넘치지 않을 때까지 반복)
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || level >= MAX_COMPACT) return;
+    if (el.scrollHeight > el.clientHeight + 1) setLevel((l) => Math.min(MAX_COMPACT, l + 1));
+  });
+  return level;
+}
+
 export function StationCard({ station, now: simNow, onClose, onDetail }) {
+  const cardRef = useRef(null);
+  const compact = useFitLevel(cardRef);
   const j = station.judgement;
   const m = j.metrics ?? {};
   // 실물 지점은 실제 시계, 가상 지점은 시뮬레이터 시계 기준
@@ -73,7 +107,11 @@ export function StationCard({ station, now: simNow, onClose, onDetail }) {
   const rain = station.latest?.rainMm;
 
   return (
-    <aside className={`station-card is-${j.state}`} aria-label={`${station.name} 요약`}>
+    <aside
+      ref={cardRef}
+      className={`station-card is-${j.state}${compact ? ` compact-${compact}` : ""}`}
+      aria-label={`${station.name} 요약`}
+    >
       <div className="station-card-head">
         <div className="station-card-title">
           <h2>{station.name}</h2>

@@ -1,7 +1,7 @@
 // 지점 상세 (DESIGN.md 5장 DrainDetail)
 // 머리: 돌아가기·이름·상태·조작
 // 왼쪽 좁은 열: 로드셀 게이지 · 지점 정보(미니 지도)
-// 오른쪽 넓은 열: 숫자 카드 · 중량 그래프(예측선) · 판정 근거·통신 | 상태 비율 | 우천 영향 | 상태 전환 기록
+// 오른쪽 넓은 열: 숫자 카드 · 중량 그래프(예측선) · 판정 근거·통신 | 상태 비율·우천 영향 | 상태 전환 기록
 import { StateBadge, FlagTags } from "./StateBadge.jsx";
 import { LoadCellGauge } from "./LoadCellGauge.jsx";
 import { WeightChart } from "./WeightChart.jsx";
@@ -248,7 +248,7 @@ export function DrainDetail({ station, now, onCollect, onScenario, backHref = nu
             <h3 className="block-title">중량 변화 (최근 1시간)</h3>
             <WeightChart history={station.history} transitions={station.transitions} forecast={forecast} />
           </div>
-          <div className="detail-row is-four">
+          <div className="detail-row is-three">
             <div className="panel detail-info">
               <div>
                 <h3 className="block-title">판정 근거</h3>
@@ -268,13 +268,15 @@ export function DrainDetail({ station, now, onCollect, onScenario, backHref = nu
                 </div>
               )}
             </div>
-            <div className="panel">
-              <h3 className="block-title">최근 1시간 상태 비율</h3>
-              <StateShare station={station} clock={clock} />
-            </div>
-            <div className="panel">
-              <h3 className="block-title">비가 올 때 쌓이는 속도</h3>
-              <RainCompare history={station.history} />
+            <div className="panel panel-stack">
+              <div>
+                <h3 className="block-title">최근 1시간 상태 비율</h3>
+                <StateShare station={station} clock={clock} />
+              </div>
+              <div>
+                <h3 className="block-title">비가 올 때 쌓이는 속도</h3>
+                <RainCompare history={station.history} />
+              </div>
             </div>
             <div className="panel">
               <h3 className="block-title">상태 전환 기록</h3>

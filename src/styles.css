@@ -364,6 +364,13 @@ button {
   font-weight: 700;
   white-space: nowrap;
 }
+.topbar-home {
+  color: inherit;
+  text-decoration: none;
+}
+.topbar-home:hover {
+  color: var(--accent);
+}
 .topbar-clock {
   display: inline-flex;
   align-items: center;
@@ -480,8 +487,7 @@ button {
 /* ---------- 8-2. 토스트 ---------- */
 .toasts {
   position: fixed;
-  left: 50%;
-  transform: translateX(-50%); /* 아래 가운데: 오른쪽 요약 카드·왼쪽 목록을 가리지 않게 */
+  right: var(--sp-5); /* 모든 페이지 오른쪽 아래 (메인에서 요약 카드가 열리면 .has-card 로 왼쪽으로 비킴) */
   bottom: var(--sp-5);
   z-index: 1100;
   display: grid;
@@ -942,9 +948,14 @@ button.summary-cell:hover {
   gap: var(--sp-5);
   align-items: start;
 }
-.detail-row.is-four {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+.detail-row.is-three {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr);
   align-items: stretch;
+}
+.panel-stack {
+  display: grid;
+  gap: var(--sp-4);
+  align-content: start;
 }
 /* 상세: 왼쪽 좁은 열 + 오른쪽 넓은 열 */
 .detail-grid {
@@ -987,7 +998,7 @@ button.summary-cell:hover {
   }
   .detail-grid,
   .detail-row,
-  .detail-row.is-four {
+  .detail-row.is-three {
     grid-template-columns: minmax(0, 1fr);
   }
 }
@@ -1814,11 +1825,11 @@ button.summary-cell:hover {
   font-size: 12px;
 }
 
-/* 상세 페이지에서는 알림 팝업을 오른쪽 아래로 (가운데 아래는 상태 기록을 가림) */
-.app.on-station .toasts {
-  left: auto;
-  right: var(--sp-5);
-  transform: none;
+/* 메인에서 요약 카드(지도 오른쪽, 폭 300px)가 열려 있으면 알림을 카드 왼쪽에 띄운다 */
+@media (min-width: 701px) {
+  .app.has-card .toasts {
+    right: calc(var(--sp-5) + var(--sp-3) + 300px + var(--sp-3));
+  }
 }
 
 /* ---------- 상세: 최근 1시간 상태 비율 ---------- */
@@ -1945,7 +1956,7 @@ button.summary-cell:hover {
   padding-top: var(--sp-3);
 }
 .app.on-station .page.is-narrow {
-  max-width: none;
+  max-width: 1440px; /* 흰 배경은 화면 전체, 내용은 가운데 정렬 (너무 넓게 늘어지지 않게) */
 }
 .app.on-station .card.detail {
   border: none;
@@ -1958,14 +1969,15 @@ button.summary-cell:hover {
 .app.on-station .card.detail.is-danger { border-top-color: var(--st-danger); box-shadow: none; }
 .app.on-station .card.detail.is-check { border-top-color: var(--st-check); opacity: 1; }
 
-/* 낮은 화면: 요약 카드가 지도 높이 안에 다 들어가도록 최근 상태 변화는 숨김 (상세 페이지에 있음) */
-@media (max-height: 820px) {
-  .station-card-sec.is-recent {
-    display: none;
-  }
-  .station-card-grid dd {
-    font-size: 14px;
-  }
+/* 요약 카드가 지도 높이를 넘치면 단계별로 숨김 (StationCard.jsx useFitLevel) */
+.station-card.compact-1 .is-recent,
+.station-card.compact-2 .is-recent,
+.station-card.compact-3 .is-recent,
+.station-card.compact-2 .spark,
+.station-card.compact-3 .spark,
+.station-card.compact-3 .station-card-sub,
+.station-card.compact-3 .station-card-badges {
+  display: none;
 }
 
 .chart-box {
@@ -1974,11 +1986,5 @@ button.summary-cell:hover {
 @media (max-height: 820px) {
   .chart-box {
     height: 190px;
-  }
-}
-/* 중간 폭: 아랫줄 4칸 → 2칸 */
-@media (max-width: 1499px) {
-  .detail-row.is-four {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

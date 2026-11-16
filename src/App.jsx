@@ -68,9 +68,11 @@ export default function App() {
   const route = useRoute({ enabled: page.page === "route", depot: DEPOT, points: targets });
 
   const station = page.page === "station" ? (sim.stations.find((s) => s.id === page.id) ?? null) : null;
+  // 메인에서 요약 카드가 열려 있으면 알림 팝업을 카드 왼쪽으로 비켜 띄운다 (styles.css .has-card)
+  const cardOpen = page.page === "main" && selected != null;
 
   return (
-    <div className={`app${page.page === "main" || page.page === "route" ? " is-fit" : ""}${page.page === "station" ? " on-station" : ""}`}>
+    <div className={`app${page.page === "main" || page.page === "route" ? " is-fit" : ""}${page.page === "station" ? " on-station" : ""}${cardOpen ? " has-card" : ""}`}>
       {/* 상단바 + 위험 배너는 스크롤해도 위에 고정 */}
       <div className="sticky-head">
         <TopBar
@@ -107,6 +109,7 @@ export default function App() {
             <MapView stations={shown} selectedId={selected?.id ?? null} onSelect={setSelectedId}>
               {selected && (
                 <StationCard
+                  key={selected.id}
                   station={selected}
                   now={sim.now}
                   onClose={() => setSelectedId(null)}

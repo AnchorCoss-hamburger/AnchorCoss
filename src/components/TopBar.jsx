@@ -21,7 +21,11 @@ export function TopBar({ sim, mode, onMode, weather, feed, realStation, page }) 
   return (
     <header className="topbar">
       <div className="topbar-title">
-        <h1>빗물받이 막힘 감지 대시보드</h1>
+        <h1>
+          <a className="topbar-home" href={paths.main()} title="대시보드(메인)로">
+            빗물받이 막힘 감지 대시보드
+          </a>
+        </h1>
         <span className="topbar-clock num" title="시뮬레이션 시각 (가상 지점 기준)">
           <span className={`live-dot${sim.playing ? " is-on" : ""}`} aria-hidden="true" />
           {fmtClock(sim.now)}
