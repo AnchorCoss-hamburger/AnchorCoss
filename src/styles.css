@@ -1313,48 +1313,10 @@ button.summary-cell:hover {
   color: var(--st-warn-text);
   font-size: var(--fs-small);
 }
-.route-steps {
-  list-style: none;
-  margin: var(--sp-3) 0 0;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--sp-1);
-  font-size: var(--fs-small);
-}
-.route-step {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sp-1);
-}
-.route-step + .route-step::before {
-  content: "→";
-  color: var(--text-mute);
-}
-.route-step.is-depot {
-  color: var(--text-sub);
-  font-weight: 600;
-}
-.route-stop {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px 2px 2px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--surface);
-  color: var(--text);
-  font: inherit;
-  cursor: pointer;
-}
-.route-stop:hover {
-  background: var(--bg);
-}
 .route-no {
   min-width: 18px;
   height: 18px;
-  display: grid;
+  display: inline-grid;
   place-items: center;
   border-radius: 9px;
   background: var(--accent);
@@ -1574,8 +1536,8 @@ button.summary-cell:hover {
   margin-top: auto; /* 버튼은 패널 맨 아래 */
   position: sticky; /* 화면이 낮아 카드 안에서 스크롤돼도 버튼은 항상 보이게 */
   bottom: 0;
-  box-shadow: 0 0 0 var(--sp-3) var(--surface); /* 버튼 위아래로 흰 여백 (뒤 내용 가림) */
   margin-bottom: var(--sp-3);
+  /* (예전) 버튼 둘레 흰 그림자는 바로 위 줄을 덮어 잘려 보이게 해서 없앴다 */
 }
 .station-card-sec h3 {
   margin-bottom: 4px;
@@ -1987,4 +1949,73 @@ button.summary-cell:hover {
   .chart-box {
     height: 190px;
   }
+}
+
+/* ---------- 수거 경로: 수거 예상량 · 방문 순서 표 · 빠진 지점 ---------- */
+.route-load {
+  margin-top: var(--sp-2);
+  font-size: var(--fs-small);
+}
+.route-load b {
+  font-size: 16px;
+}
+.route-table {
+  width: 100%;
+  margin-top: var(--sp-3);
+  border-collapse: collapse;
+  font-size: var(--fs-small);
+}
+.route-table th {
+  padding: 6px var(--sp-2);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-mute);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+}
+.route-table td {
+  padding: 6px var(--sp-2);
+  border-bottom: 1px solid var(--border);
+}
+.route-table .num-col {
+  text-align: right;
+}
+.route-table tr.is-stop {
+  cursor: pointer;
+}
+.route-table tr.is-stop:hover {
+  background: var(--bg);
+}
+.route-table tr.is-depot td {
+  color: var(--text-sub);
+  font-weight: 600;
+}
+.route-name {
+  font-weight: 600;
+}
+.route-state {
+  font-weight: 700;
+  white-space: nowrap;
+}
+.route-note {
+  margin-top: 4px;
+  font-size: 11px;
+}
+.route-skipped {
+  margin-top: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  font-size: var(--fs-small);
+}
+.route-skipped h4 {
+  margin: 0 0 4px;
+  color: var(--text-sub);
+  font-size: 12px;
+}
+.route-skipped ul {
+  margin: 0;
+  padding-left: 1.1em;
+  display: grid;
+  gap: 2px;
 }
