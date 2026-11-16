@@ -1405,7 +1405,7 @@ button.summary-cell:hover {
   position: absolute;
   top: var(--sp-3);
   right: var(--sp-3);
-  bottom: var(--sp-3);
+  max-height: calc(100% - 2 * var(--sp-3)); /* 내용만큼만, 지도보다 길면 카드 안에서 스크롤 */
   z-index: 600; /* 마커 위, Leaflet 컨트롤(800) 아래 */
   width: 300px;
   display: flex;
@@ -1479,7 +1479,8 @@ button.summary-cell:hover {
   font-weight: 600;
 }
 .station-card-total {
-  font-size: 26px !important;
+  display: block;
+  font-size: 26px;
   font-weight: 700;
 }
 .station-card-reason {
@@ -1487,7 +1488,7 @@ button.summary-cell:hover {
   font-size: var(--fs-small);
 }
 .station-card-more {
-  margin-top: auto;
+  flex: none;
   height: 40px;
 }
 /* 좁은 화면: 지도를 가리지 않게 지도 아래에 붙임 */
@@ -1650,4 +1651,57 @@ button.summary-cell:hover {
   min-width: 28px;
   font-weight: 700;
   white-space: nowrap;
+}
+
+/* 요약 카드의 최근 추세 그래프 */
+.spark {
+  margin: var(--sp-2) 0 0;
+}
+.spark-svg {
+  display: block;
+  width: 100%;
+  height: 56px;
+  overflow: visible;
+}
+.spark-line {
+  fill: none;
+  stroke: var(--chart-total);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  stroke-linejoin: round;
+}
+.spark-area {
+  fill: var(--st-normal-bg);
+}
+.spark-svg.st-warn .spark-area { fill: var(--st-warn-bg); }
+.spark-svg.st-danger .spark-area { fill: var(--st-danger-bg); }
+.spark-svg.st-check .spark-area { fill: var(--st-check-bg); }
+.spark-th {
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+  vector-effect: non-scaling-stroke;
+}
+.spark-th.is-warn { stroke: var(--st-warn); }
+.spark-th.is-danger { stroke: var(--st-danger); }
+.spark-cap {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin-top: 4px;
+  color: var(--text-mute);
+  font-size: 11px;
+}
+.spark-key {
+  display: inline-block;
+  width: 10px;
+  margin: 0 2px 0 6px;
+  border-top: 2px dashed;
+  vertical-align: middle;
+}
+.spark-key.is-warn { color: var(--st-warn); }
+.spark-key.is-danger { color: var(--st-danger); }
+.spark-empty {
+  margin-top: var(--sp-2);
+  color: var(--text-mute);
+  font-size: 12px;
 }

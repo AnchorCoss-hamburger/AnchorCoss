@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { countByState, sortByPriority, fmtAgo, fmtG, rssiLevel, toChartData, downsample, rainSegments, collectTargets, fmtDistance, fmtDuration, filterStations, fmtTime } from "./format.js";
+import { countByState, sortByPriority, fmtAgo, fmtG, rssiLevel, toChartData, downsample, rainSegments, collectTargets, fmtDistance, fmtDuration, filterStations, fmtTime, sparkPath } from "./format.js";
 
 describe("downsample", () => {
   const pt = (ts, total, rain = 0) => ({ ts, left: total == null ? null : total / 2, right: total == null ? null : total / 2, total, rain });
@@ -137,5 +137,21 @@ describe("fmtTime", () => {
   it("HH:MM:SS 두 자리", () => {
     expect(fmtTime(new Date(2026, 10, 16, 5, 2, 9).getTime())).toBe("05:02:09");
     expect(fmtTime(new Date(2026, 10, 16, 17, 30, 0).getTime())).toBe("17:30:00");
+  });
+});
+
+describe("sparkPath", () => {
+  const opt = { width: 100, height: 50, maxG: 1000 };
+  it("시간·값을 좌표로 (아래가 0g)", () => {
+    const r = sparkPath([{ ts: 0, total: 0 }, { ts: 10, total: 1000 }], opt);
+    expect(r.line).toBe("M0,50L100,0");
+    expect(r.area).toBe("M0,50L0,50L100,0L100,50Z");
+  });
+  it("null에서 선을 끊는다, 최대값을 넘으면 위쪽에 붙인다", () => {
+    const r = sparkPath([{ ts: 0, total: 500 }, { ts: 5, total: null }, { ts: 10, total: 2000 }], opt);
+    expect(r.line).toBe("M0,25M100,0");
+  });
+  it("값이 없으면 빈 경로", () => {
+    expect(sparkPath([{ ts: 0, total: null }], opt)).toEqual({ line: "", area: "" });
   });
 });

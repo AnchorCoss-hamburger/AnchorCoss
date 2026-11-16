@@ -169,3 +169,36 @@ export function filterStations(stations, { source = "all", state = null } = {}) 
       (state == null || s.judgement?.state === state),
   );
 }
+
+/**
+ * 작은 추세 그래프(스파크라인)용 SVG 경로.
+ * points: [{ ts, total }] (total=null이면 선을 끊음 — 통신 두절·센서 이상)
+ * → { line, area } path 문자열. 그릴 점이 없으면 빈 문자열
+ */
+export function sparkPath(points, { width, height, maxG }) {
+  const valid = points.filter((p) => p.total != null);
+  if (!valid.length) return { line: "", area: "" };
+  const t0 = points[0].ts;
+  const span = points[points.length - 1].ts - t0 || 1;
+  const x = (ts) => ((ts - t0) / span) * width;
+  const y = (g) => height - (Math.min(g, maxG) / maxG) * height;
+  const r1 = (n) => Math.round(n * 10) / 10;
+
+  let line = "";
+  let area = "";
+  let seg = [];
+  const flush = () => {
+    if (!seg.length) return;
+    line += seg.map((p, i) => `${i ? "L" : "M"}${r1(x(p.ts))},${r1(y(p.total))}`).join("");
+    const first = r1(x(seg[0].ts));
+    const last = r1(x(seg[seg.length - 1].ts));
+    area += `M${first},${height}` + seg.map((p) => `L${r1(x(p.ts))},${r1(y(p.total))}`).join("") + `L${last},${height}Z`;
+    seg = [];
+  };
+  for (const p of points) {
+    if (p.total == null) flush();
+    else seg.push(p);
+  }
+  flush();
+  return { line, area };
+}
