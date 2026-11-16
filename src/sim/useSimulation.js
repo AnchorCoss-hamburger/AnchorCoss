@@ -5,7 +5,7 @@
 // sim.events       최근 상태 전환 이벤트 (최신순, 최대 50) — 배너/토스트용 { id, stationId, ts, from, to, reason }
 // sim.runId        reset()마다 1씩 증가. 화면 상태를 초기화하려면 컴포넌트 key로 쓴다
 // sim.now          시뮬레이션 현재 시각 (epoch ms)
-// sim.playing / setPlaying(bool)   재생·일시정지
+// sim.playing / setPlaying(bool)   재생·일시정지 (처음에는 일시정지 — 재생 버튼을 눌러야 시나리오가 진행)
 // sim.speed / setSpeed(n)          배속 (1틱 = 10초, 1× = 실제 1초마다 1틱)
 // sim.rainOverride / setRain(mm|null)  강우 수동 입력 (null = 시나리오 값)
 // sim.collect(stationId)           수거(리셋)
@@ -32,14 +32,15 @@ function makeEngine(seed, warmupSteps) {
  * @param {number} [opt.seed]        같은 seed면 시연마다 같은 흐름
  * @param {number} [opt.intervalMs]  실제 시간 기준 틱 간격
  * @param {number} [opt.warmupSteps] 시작 전에 미리 돌릴 틱 수 (기본 30 = 5분)
+ * @param {boolean}[opt.autoPlay]    열자마자 재생할지 (기본 false)
  */
-export function useSimulation({ seed = 42, intervalMs = 1000, warmupSteps = 30 } = {}) {
+export function useSimulation({ seed = 42, intervalMs = 1000, warmupSteps = 30, autoPlay = false } = {}) {
   const engineRef = useRef(null);
   if (!engineRef.current) engineRef.current = makeEngine(seed, warmupSteps);
 
   const [snap, setSnap] = useState(() => engineRef.current.snapshot());
   const [events, setEvents] = useState([]);
-  const [playing, setPlaying] = useState(true);
+  const [playing, setPlaying] = useState(autoPlay);
   const [speed, setSpeed] = useState(1);
   const [runId, setRunId] = useState(0); // reset()마다 증가 — 화면 쪽 상태(알림 닫기 기록 등) 초기화용
 
