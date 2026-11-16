@@ -40,7 +40,8 @@ export function fmtAgo(now, ts) {
 
 /** 시각 HH:MM:SS (24시간) */
 export function fmtTime(ts) {
-  return new Date(ts).toLocaleTimeString("ko-KR", { hour12: false });
+  const d = new Date(ts);
+  return [d.getHours(), d.getMinutes(), d.getSeconds()].map((n) => String(n).padStart(2, "0")).join(":");
 }
 
 /** 1,234g */

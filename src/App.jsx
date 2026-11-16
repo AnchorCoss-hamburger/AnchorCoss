@@ -96,7 +96,12 @@ export default function App() {
               state={stateFilter}
               onState={setStateFilter}
             />
-            <PriorityList stations={shown} now={sim.now} selectedId={selected?.id ?? null} onSelect={setSelectedId} />
+            <PriorityList
+              stations={shown}
+              events={sim.events}
+              selectedId={selected?.id ?? null}
+              onSelect={setSelectedId}
+            />
           </aside>
           <main className="layout-main">
             <MapView stations={shown} selectedId={selected?.id ?? null} onSelect={setSelectedId}>

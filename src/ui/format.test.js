@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { countByState, sortByPriority, fmtAgo, fmtG, rssiLevel, toChartData, downsample, rainSegments, collectTargets, fmtDistance, fmtDuration, filterStations } from "./format.js";
+import { countByState, sortByPriority, fmtAgo, fmtG, rssiLevel, toChartData, downsample, rainSegments, collectTargets, fmtDistance, fmtDuration, filterStations, fmtTime } from "./format.js";
 
 describe("downsample", () => {
   const pt = (ts, total, rain = 0) => ({ ts, left: total == null ? null : total / 2, right: total == null ? null : total / 2, total, rain });
@@ -130,5 +130,12 @@ describe("filterStations", () => {
   it("상태와 함께", () => {
     expect(ids({ source: "virtual", state: "warn" })).toEqual(["a"]);
     expect(ids({ state: "danger" })).toEqual([]);
+  });
+});
+
+describe("fmtTime", () => {
+  it("HH:MM:SS 두 자리", () => {
+    expect(fmtTime(new Date(2026, 10, 16, 5, 2, 9).getTime())).toBe("05:02:09");
+    expect(fmtTime(new Date(2026, 10, 16, 17, 30, 0).getTime())).toBe("17:30:00");
   });
 });
