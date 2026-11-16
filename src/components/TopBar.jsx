@@ -4,7 +4,7 @@ import { paths } from "../ui/router.js";
 const NAV = [
   { page: "main", label: "대시보드", href: paths.main() },
   { page: "route", label: "수거 경로", href: paths.route() },
-  // 판정 비교(#/compare)는 실측 데이터로 바꿀 때까지 메뉴에서 숨김 (주소로는 열 수 있음)
+  { page: "compare", label: "판정 비교", href: paths.compare() },
 ];
 
 const fmtClock = (ts) =>
