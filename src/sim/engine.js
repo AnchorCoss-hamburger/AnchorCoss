@@ -37,6 +37,8 @@ export function createEngine({
   });
   const per = new Map(sim.stations().map((s) => [s.id, fresh()]));
   let realIds = new Set();
+  // 실물 지점 중 "지금 센서가 보낸" 데이터를 실제로 받은 지점 (서버에 남은 오래된 기록만으로는 연결로 보지 않는다)
+  let connectedIds = new Set();
 
   /** 샘플(또는 수신 없음 null) 1건 반영. 상태 전환이 있으면 이벤트 반환 */
   function ingest(stationId, now, sample) {
@@ -95,7 +97,10 @@ export function createEngine({
     setRealStations(ids) {
       const next = new Set(ids.filter((id) => per.has(id)));
       for (const id of new Set([...realIds, ...next])) {
-        if (realIds.has(id) !== next.has(id)) resetStation(id, next.has(id) ? wallClock() : sim.now);
+        if (realIds.has(id) !== next.has(id)) {
+          resetStation(id, next.has(id) ? wallClock() : sim.now);
+          connectedIds.delete(id); // 모드가 바뀌면 연결 여부도 처음부터
+        }
       }
       realIds = next;
     },
@@ -110,6 +115,7 @@ export function createEngine({
       const events = [];
       for (const s of [...samples].sort((a, b) => a.ts - b.ts)) {
         if (p.latest && s.ts <= p.latest.ts) continue;
+        if (wallClock() - s.ts <= th.STALE_SEC * 1000) connectedIds.add(stationId); // 방금 온 샘플만 (오래된 기록은 제외)
         const ev = ingest(stationId, s.ts, s); // 측정 시각 기준으로 판정 (디바운싱 시간 계산이 맞도록)
         if (ev) events.push(ev);
       }
@@ -128,12 +134,14 @@ export function createEngine({
         stations: sim.stations().map((s) => {
           const p = per.get(s.id);
           const live = realIds.has(s.id);
+          const connected = connectedIds.has(s.id);
           return {
             ...s,
             // 실물 지점이 아직 서버 데이터로 연결되지 않았으면(시뮬레이션 모드) 가상 값으로 움직이므로,
             // 이름에 그대로 "(실물)"을 두면 "실물이 위험"으로 오해할 수 있다
-            name: s.real && !live ? s.name.replace("(실물)", "(실물·연결 전)") : s.name,
-            live, // 실물 데이터 수신 중인 지점
+            name: s.real && !connected ? s.name.replace("(실물)", "(실물·연결 전)") : s.name,
+            live, // 실시간 모드에서 실물 지점으로 지정됨 (조작 제한·시계 기준)
+            connected, // 센서 데이터를 실제로 받은 지점 (이름·"실시간 수신" 표시 기준)
             clockNow: live ? wall : sim.now, // "N분 전" 계산에 쓸 시계
             latest: p.latest,
             history: p.history.slice(),

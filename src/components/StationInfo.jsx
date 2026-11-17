@@ -95,7 +95,7 @@ export function StationInfo({ station }) {
         {station.real && (
           <div>
             <dt>연결</dt>
-            <dd>{station.live ? "USB 시리얼 · 실시간 수신 중" : "USB 시리얼 (지금은 시뮬레이션)"}</dd>
+            <dd>{station.connected ? "USB 시리얼 · 실시간 수신 중" : station.live ? "USB 시리얼 · 수신 대기" : "USB 시리얼 (지금은 시뮬레이션)"}</dd>
           </div>
         )}
         <div>
