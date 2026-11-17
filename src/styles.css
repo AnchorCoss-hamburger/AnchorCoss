@@ -55,10 +55,11 @@
   /* 글자 */
   --font: "Pretendard", "Noto Sans KR", system-ui, -apple-system, "Segoe UI", sans-serif;
   --fs-title: 20px;
-  --fs-card-title: 14px;
+  --fs-card-title: 15px;
   --fs-metric: 32px;
-  --fs-body: 15px;
-  --fs-small: 13px;
+  --fs-body: 16px;
+  --fs-small: 14px;
+  --fs-xs: 13px; /* 보조 글자 최소 크기 (이보다 작은 글자는 원 안 아이콘·지도 배지만) */
 
   /* 모션 */
   --ease: 150ms ease;
@@ -123,7 +124,7 @@ button {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  padding: var(--sp-4);
+  padding: 20px;
 }
 
 .card-title {
@@ -186,7 +187,7 @@ button {
   align-items: center;
   padding: 1px 8px;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--text-sub);
   background: var(--st-check-bg);
   white-space: nowrap;
@@ -291,15 +292,15 @@ button {
   flex: 1;
   display: grid;
   grid-template-columns: 360px minmax(0, 1fr);
-  gap: var(--sp-4);
-  padding: var(--sp-4) var(--sp-5) var(--sp-5);
+  gap: var(--sp-5);
+  padding: var(--sp-5) var(--sp-6) var(--sp-6);
   align-items: start;
 }
 
 .layout-side,
 .layout-main {
   display: grid;
-  gap: var(--sp-4);
+  gap: var(--sp-5);
   min-width: 0;
 }
 
@@ -532,7 +533,7 @@ button {
   font-size: var(--fs-small);
 }
 .toast-reason {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--text-sub);
 }
 
@@ -560,7 +561,7 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: var(--sp-2);
-  padding: var(--sp-2) var(--sp-3);
+  padding: 10px var(--sp-3);
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   background: none;
@@ -576,51 +577,132 @@ button {
   border-color: var(--accent);
 }
 
-/* ---------- 9-1. 상태 요약 ---------- */
-.summary-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--sp-2);
-}
-.summary-cell {
+/* ---------- 9-1. 상태 요약 ----------
+   지점이 많아도 자리를 덜 차지하게: 한 줄 요약 + 비율 막대 + 2×2 작은 목록 */
+.summary-lead {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: var(--sp-2) var(--sp-3);
-  border-radius: var(--radius-sm);
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px var(--sp-2);
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-small);
+  color: var(--text-sub);
 }
-.summary-label {
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-.summary-num {
-  font-size: var(--fs-metric);
+.summary-lead-num {
+  font-size: 20px;
   font-weight: 700;
-  line-height: 1.1;
+  letter-spacing: -0.01em;
 }
-.summary-cell.st-normal { color: var(--st-normal-text); background: var(--st-normal-bg); }
-.summary-cell.st-warn { color: var(--st-warn-text); background: var(--st-warn-bg); }
-.summary-cell.st-danger { color: var(--st-danger-text); background: var(--st-danger-bg); }
-.summary-cell.st-check { color: var(--st-check-text); background: var(--st-check-bg); }
+.summary-lead-ok {
+  color: var(--st-normal-text);
+  font-weight: 600;
+}
+.summary-lead-total {
+  margin-left: auto;
+  color: var(--text-mute);
+  font-size: var(--fs-xs);
+}
+.summary-bar {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+  margin-bottom: var(--sp-3);
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--st-check-bg);
+}
+.summary-bar-seg {
+  flex-basis: 0;
+  min-width: 4px; /* 1곳이어도 보이게 */
+  transition: opacity var(--ease), flex-grow 0.4s ease;
+}
+.summary-bar-seg.st-normal { background: var(--st-normal); }
+.summary-bar-seg.st-warn { background: var(--st-warn); }
+.summary-bar-seg.st-danger { background: var(--st-danger); }
+.summary-bar-seg.st-check { background: var(--st-check); }
+.summary-bar-seg.is-dim { opacity: 0.25; }
 
-/* 상태 칸 = 필터 버튼 */
-button.summary-cell {
-  border: 2px solid transparent;
+.summary-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* 상태 줄 = 필터 버튼 */
+.summary-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: var(--sp-2);
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
   font: inherit;
+  color: var(--text);
   text-align: left;
   cursor: pointer;
-  transition: opacity var(--ease), border-color var(--ease);
+  transition: background var(--ease), border-color var(--ease), opacity var(--ease);
 }
-button.summary-cell:hover {
+.summary-row:hover:not(:disabled) {
   border-color: currentColor;
 }
-.summary-cell.is-on {
-  border-color: currentColor;
+.summary-row:disabled {
+  cursor: default;
+  opacity: 0.55;
 }
-.summary-cell.is-dim {
-  opacity: 0.45;
+.summary-dot {
+  grid-row: 1 / span 2;
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
 }
+.summary-dot.st-normal { background: var(--st-normal); }
+.summary-dot.st-warn { background: var(--st-warn); }
+.summary-dot.st-danger { background: var(--st-danger); }
+.summary-dot.st-check { background: var(--st-check); }
+.summary-row-label {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--text-sub);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.summary-row-num {
+  grid-column: 2;
+  grid-row: 2;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+.summary-row-pct {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  font-size: var(--fs-xs);
+  color: var(--text-mute);
+}
+/* 줄 테두리(hover)는 상태색, 숫자는 기본 글자색 — 위험만 숫자를 빨갛게 */
+.summary-row.st-normal { color: var(--st-normal-text); }
+.summary-row.st-warn { color: var(--st-warn-text); }
+.summary-row.st-danger { color: var(--st-danger-text); }
+.summary-row.st-check { color: var(--st-check-text); }
+.summary-row-num { color: var(--text); }
+.summary-row.st-danger:not(:disabled) .summary-row-num { color: var(--st-danger-text); }
+.summary-row.is-on.st-normal { background: var(--st-normal-bg); border-color: var(--st-normal); }
+.summary-row.is-on.st-warn { background: var(--st-warn-bg); border-color: var(--st-warn); }
+.summary-row.is-on.st-danger { background: var(--st-danger-bg); border-color: var(--st-danger); }
+.summary-row.is-on.st-check { background: var(--st-check-bg); border-color: var(--st-check); }
+.summary-row.is-dim { opacity: 0.5; }
 .summary-head {
   display: flex;
   flex-wrap: wrap;
@@ -648,7 +730,7 @@ button.summary-cell:hover {
   grid-template-columns: 20px minmax(0, 1fr) auto 76px;
   align-items: center;
   gap: var(--sp-2);
-  padding: 6px var(--sp-2);
+  padding: 10px var(--sp-3);
 }
 .prio-rank {
   color: var(--text-mute);
@@ -668,7 +750,7 @@ button.summary-cell:hover {
 }
 .badge.badge-mini {
   padding: 1px 8px;
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 .prio-score {
   display: grid;
@@ -787,7 +869,7 @@ button.summary-cell:hover {
   background: rgba(255, 255, 255, 0.95);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow);
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--st-warn-text);
 }
 .gauge-empty {
@@ -857,7 +939,7 @@ button.summary-cell:hover {
   background: rgba(255, 255, 255, 0.92);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow);
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 .map-legend li {
   display: inline-flex;
@@ -888,7 +970,7 @@ button.summary-cell:hover {
 .card.detail.is-danger {
   background: var(--surface);
   border-color: var(--st-danger);
-  box-shadow: 0 0 0 1px var(--st-danger), var(--shadow);
+  box-shadow: var(--shadow);
 }
 
 .detail-head {
@@ -916,12 +998,12 @@ button.summary-cell:hover {
 
 .detail-stats {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: var(--sp-2);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--sp-3);
   margin: 0;
 }
 .stat {
-  padding: var(--sp-2) var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--bg);
@@ -929,18 +1011,18 @@ button.summary-cell:hover {
 }
 .stat dt {
   color: var(--text-mute);
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 .stat dd {
-  margin: 2px 0 0;
-  font-size: 17px;
+  margin: 4px 0 0;
+  font-size: 20px;
   font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .stat.is-main dd {
-  font-size: 22px;
+  font-size: 26px;
 }
 .detail-row {
   display: grid;
@@ -967,13 +1049,13 @@ button.summary-cell:hover {
 .detail-side,
 .detail-main {
   display: grid;
-  gap: var(--sp-3);
+  gap: var(--sp-4);
   align-content: start;
   min-width: 0;
 }
 /* 블록 묶음: 흰 바탕에 옅은 테두리 (흰 공간에 요소가 떠 보이지 않게) */
 .panel {
-  padding: var(--sp-3) var(--sp-4);
+  padding: var(--sp-4) var(--sp-5);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface);
@@ -994,7 +1076,7 @@ button.summary-cell:hover {
 }
 @media (max-width: 1099px) {
   .detail-stats {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .detail-grid,
   .detail-row,
@@ -1073,7 +1155,7 @@ button.summary-cell:hover {
   display: grid;
   place-items: center;
   color: var(--st-check-text);
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 700;
 }
 /* 기준선: .gauge-tracks 기준 bottom % (막대 높이와 같은 척도) */
@@ -1089,7 +1171,7 @@ button.summary-cell:hover {
   position: absolute;
   right: 4px;
   top: -16px;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   background: var(--surface);
   padding: 0 3px;
@@ -1104,12 +1186,12 @@ button.summary-cell:hover {
   left: 0;
   right: 0;
   text-align: center;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   color: #fff;
 }
 .gauge-note {
-  font-size: 11px;
+  font-size: var(--fs-xs);
   text-align: center;
 }
 
@@ -1136,7 +1218,7 @@ button.summary-cell:hover {
   margin: var(--sp-2) 0 0;
   padding: 0;
   list-style: none;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--text-sub);
 }
 .chart-legend li {
@@ -1171,7 +1253,7 @@ button.summary-cell:hover {
   margin: 0;
 }
 .comm-grid dt {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--text-mute);
 }
 .comm-grid dd {
@@ -1514,7 +1596,7 @@ button.summary-cell:hover {
 }
 .station-card-grid dt {
   color: var(--text-mute);
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 .station-card-grid dd {
   margin: 2px 0 0;
@@ -1542,7 +1624,7 @@ button.summary-cell:hover {
 .station-card-sec h3 {
   margin-bottom: 4px;
   color: var(--text-mute);
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 600;
 }
 .station-card-eta {
@@ -1551,7 +1633,7 @@ button.summary-cell:hover {
 }
 .station-card-sub {
   color: var(--text-mute);
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 .station-card-recent {
   display: grid;
@@ -1642,7 +1724,7 @@ button.summary-cell:hover {
 }
 .alert-chip-rain {
   color: var(--accent);
-  font-size: 11px;
+  font-size: var(--fs-xs);
 }
 .alert-more {
   color: var(--st-danger-text);
@@ -1691,7 +1773,7 @@ button.summary-cell:hover {
   border-radius: 999px;
   background: var(--bg);
   color: var(--text-sub);
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 .log-row {
   display: grid;
@@ -1770,7 +1852,7 @@ button.summary-cell:hover {
   gap: var(--sp-2);
   margin-top: 4px;
   color: var(--text-mute);
-  font-size: 11px;
+  font-size: var(--fs-xs);
 }
 .spark-key {
   display: inline-block;
@@ -1784,7 +1866,7 @@ button.summary-cell:hover {
 .spark-empty {
   margin-top: var(--sp-2);
   color: var(--text-mute);
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 
 /* 메인에서 요약 카드(지도 오른쪽, 폭 300px)가 열려 있으면 알림을 카드 왼쪽에 띄운다 */
@@ -1835,7 +1917,7 @@ button.summary-cell:hover {
 .share-dot.st-check { background: var(--st-check); }
 .share-note {
   margin-top: 4px;
-  font-size: 11px;
+  font-size: var(--fs-xs);
 }
 
 /* ---------- 상세: 비 올 때 vs 맑을 때 ---------- */
@@ -1932,13 +2014,10 @@ button.summary-cell:hover {
 .app.on-station .card.detail.is-check { border-top-color: var(--st-check); opacity: 1; }
 
 /* 요약 카드가 지도 높이를 넘치면 단계별로 숨김 (StationCard.jsx useFitLevel) */
-.station-card.compact-1 .is-recent,
-.station-card.compact-2 .is-recent,
-.station-card.compact-3 .is-recent,
+.station-card.compact-1 .spark,
 .station-card.compact-2 .spark,
-.station-card.compact-3 .spark,
-.station-card.compact-3 .station-card-sub,
-.station-card.compact-3 .station-card-badges {
+.station-card.compact-2 .station-card-sub,
+.station-card.compact-2 .station-card-badges {
   display: none;
 }
 
@@ -1969,7 +2048,7 @@ button.summary-cell:hover {
   padding: 6px var(--sp-2);
   border-bottom: 1px solid var(--border);
   color: var(--text-mute);
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   text-align: left;
 }
@@ -1999,7 +2078,7 @@ button.summary-cell:hover {
 }
 .route-note {
   margin-top: 4px;
-  font-size: 11px;
+  font-size: var(--fs-xs);
 }
 .route-skipped {
   margin-top: var(--sp-3);
@@ -2011,7 +2090,7 @@ button.summary-cell:hover {
 .route-skipped h4 {
   margin: 0 0 4px;
   color: var(--text-sub);
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 .route-skipped ul {
   margin: 0;
@@ -2127,7 +2206,7 @@ button.summary-cell:hover {
 }
 .kpi-label {
   color: var(--text-mute);
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 .kpi-row {
   display: flex;
@@ -2190,7 +2269,7 @@ button.summary-cell:hover {
 .band-seg.st-check { background: var(--st-check); }
 .band-meta {
   color: var(--text-mute);
-  font-size: 11px;
+  font-size: var(--fs-xs);
   font-weight: 400;
   white-space: nowrap;
 }
@@ -2202,7 +2281,7 @@ button.summary-cell:hover {
   padding: 0;
   list-style: none;
   color: var(--text-sub);
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 .band-dot {
   display: inline-block;
@@ -2229,7 +2308,7 @@ button.summary-cell:hover {
 }
 .compare-note {
   margin-top: var(--sp-2);
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 .compare-table {
   width: 100%;
@@ -2240,7 +2319,7 @@ button.summary-cell:hover {
   padding: 4px var(--sp-2);
   border-bottom: 1px solid var(--border);
   color: var(--text-mute);
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   text-align: left;
 }
@@ -2377,7 +2456,7 @@ button.summary-cell:hover {
   border-radius: var(--radius-sm);
   background: var(--st-check-bg);
   color: var(--st-check-text);
-  font-size: 12px;
+  font-size: var(--fs-xs);
   white-space: pre-wrap;
   word-break: break-all;
 }
@@ -2389,11 +2468,138 @@ button.summary-cell:hover {
 
 /* 상단바 시계 라벨: "시뮬레이션" 표시와 실시간 모드의 실제 시각 */
 .topbar-clock-label {
-  font-size: 11px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   color: var(--text-mute);
 }
 .topbar-real {
   color: var(--accent);
   font-weight: 600;
+}
+
+/* =========================================================
+   refactor/ui — 밀도 줄이기
+   ========================================================= */
+
+/* 상단바: 자주 안 쓰는 시연 옵션(+10초·강우 수동·날씨)을 접는 메뉴 */
+.ctl-more {
+  position: relative;
+}
+.ctl-more > summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+}
+.ctl-more > summary::-webkit-details-marker {
+  display: none;
+}
+.ctl-more > summary::after {
+  content: "▾";
+  margin-left: 4px;
+  font-size: var(--fs-xs);
+}
+.ctl-more[open] > summary::after {
+  content: "▴";
+}
+.ctl-more-state {
+  margin-left: 6px;
+  color: var(--accent);
+  font-weight: 600;
+}
+.ctl-more-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 1200; /* 상단바·지도 위 */
+  min-width: 280px;
+  display: grid;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(16, 24, 40, 0.14);
+}
+.ctl-more-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.ctl-more-title {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--text-sub);
+}
+
+
+/* 우선순위 목록: 순위 · 이름 · 상태 · 점수 (막대·태그는 선택한 행에서만) */
+.prio-row.is-simple {
+  grid-template-columns: 24px minmax(0, 1fr) auto 40px;
+  gap: var(--sp-3);
+}
+.prio-row.is-simple .prio-score {
+  display: block;
+  font-size: var(--fs-body);
+}
+
+/* 지도 범례의 상습 구간 표시 켜고 끄기 */
+.legend-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  font: inherit;
+  color: var(--text-mute);
+  cursor: pointer;
+}
+.legend-toggle.is-on {
+  color: var(--text);
+  font-weight: 600;
+}
+.legend-toggle:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* 지점 상세: 판정 근거를 숫자 바로 아래로, 보조 숫자는 한 줄로, 나머지는 접기 */
+.detail-subline {
+  margin: calc(var(--sp-2) * -1) 0 0;
+  color: var(--text-sub);
+  font-size: var(--fs-small);
+}
+.detail-subline b {
+  color: var(--text);
+}
+.detail-reason .reason-list {
+  font-size: var(--fs-body);
+}
+.detail-more {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.detail-more > summary {
+  cursor: pointer;
+  padding: var(--sp-3) var(--sp-5);
+  font-weight: 600;
+  color: var(--text-sub);
+  list-style: none;
+}
+.detail-more > summary::-webkit-details-marker {
+  display: none;
+}
+.detail-more > summary::before {
+  content: "▸ ";
+}
+.detail-more[open] > summary::before {
+  content: "▾ ";
+}
+.detail-more > summary .muted {
+  font-weight: 400;
+}
+.detail-more > .detail-row {
+  padding: 0 var(--sp-4) var(--sp-4);
 }

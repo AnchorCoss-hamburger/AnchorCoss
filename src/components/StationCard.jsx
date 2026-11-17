@@ -3,24 +3,12 @@
 
 import { useLayoutEffect, useRef, useState } from "react";
 import { StateBadge, FlagTags } from "./StateBadge.jsx";
-import {
-  fmtAgo,
-  fmtG,
-  fmtStage,
-  fmtTime,
-  fmtDuration,
-  etaToDanger,
-  toChartData,
-  downsample,
-  sparkPath,
-} from "../ui/format.js";
-import { STATES, STATE_META } from "../logic/states.js";
+import { fmtAgo, fmtG, fmtStage, fmtDuration, etaToDanger, toChartData, downsample, sparkPath } from "../ui/format.js";
+import { STATES } from "../logic/states.js";
 import { TH, HOTSPOT } from "../config.js";
 import { collectionHistory } from "../sim/history.js";
 
 const SPARK_W = 260;
-const SHORT = { normal: "정상", warn: "주의", danger: "위험", check: "점검" };
-const RECENT = 3; // 최근 상태 변화 몇 건
 
 /** 수거 기준 도달 예상 문장 */
 function etaText(m, state) {
@@ -68,8 +56,8 @@ function Sparkline({ history, state }) {
 }
 
 // 카드가 지도 높이를 넘치면 덜 중요한 것부터 하나씩 숨긴다 (글꼴·화면 배율이 달라도 잘리지 않게).
-// 1단계: 최근 상태 변화 → 2단계: 추세 그래프 → 3단계: 보조 문구·플래그. 숨긴 내용은 상세 페이지에 있다.
-const MAX_COMPACT = 3;
+// 1단계: 추세 그래프 → 2단계: 보조 문구·플래그. 숨긴 내용은 상세 페이지에 있다.
+const MAX_COMPACT = 2;
 
 // 다른 지점을 고르면 App에서 key로 카드를 새로 만들어 0단계부터 다시 맞춘다.
 function useFitLevel(ref) {
@@ -105,7 +93,6 @@ export function StationCard({ station, now: simNow, onClose, onDetail }) {
   const m = j.metrics ?? {};
   // 실물 지점은 실제 시계, 가상 지점은 시뮬레이터 시계 기준
   const now = station.clockNow ?? simNow;
-  const rain = station.latest?.rainMm;
   const hist = collectionHistory(station);
 
   return (
@@ -118,6 +105,11 @@ export function StationCard({ station, now: simNow, onClose, onDetail }) {
         <div className="station-card-title">
           <h2>{station.name}</h2>
           <span className="tag">{station.real ? "실물" : "가상"}</span>
+          {hist?.hotspot && (
+            <span className="tag is-hot" title={`최근 ${HOTSPOT.DAYS}일 수거 ${hist.total}회 (가상 기록)`}>
+              상습
+            </span>
+          )}
         </div>
         <button className="station-card-close" onClick={onClose} aria-label="요약 닫기">
           ✕
@@ -142,29 +134,8 @@ export function StationCard({ station, now: simNow, onClose, onDetail }) {
           <dd className="num">{fmtStage(m.stage)}</dd>
         </div>
         <div>
-          <dt>막힘 점수</dt>
-          <dd className="num">{j.score ?? "—"}</dd>
-        </div>
-        <div>
-          <dt>강우</dt>
-          <dd className="num">{rain == null ? "—" : `${rain}mm/h`}</dd>
-        </div>
-        <div>
           <dt>마지막 수신</dt>
           <dd className={`num${j.state === STATES.CHECK ? " tx-check" : ""}`}>{fmtAgo(now, station.latest?.ts)}</dd>
-        </div>
-        <div className="is-wide">
-          <dt>최근 {HOTSPOT.DAYS}일 수거</dt>
-          <dd>
-            {hist ? (
-              <>
-                <span className="num">{hist.total}회</span>
-                {hist.hotspot && <span className="tag is-hot station-card-hot">상습 주의 구간</span>}
-              </>
-            ) : (
-              <span className="muted">기록 없음 (합동 테스트부터 기록)</span>
-            )}
-          </dd>
         </div>
       </dl>
 
@@ -178,31 +149,6 @@ export function StationCard({ station, now: simNow, onClose, onDetail }) {
           </section>
         );
       })()}
-
-      <section className="station-card-sec is-recent" aria-label="최근 상태 변화">
-        <h3>최근 상태 변화</h3>
-        {station.transitions.length === 0 ? (
-          <p className="station-card-sub">아직 변화 없음</p>
-        ) : (
-          <ol className="station-card-recent">
-            {station.transitions.slice(0, RECENT).map((t) => (
-              <li key={t.id}>
-                <span className="num muted">{fmtTime(t.ts).slice(0, 5)}</span>
-                <span className={`log-dot st-${t.from}`} aria-label={STATE_META[t.from]?.label}>
-                  {STATE_META[t.from]?.icon}
-                </span>
-                <span className="muted" aria-hidden="true">
-                  →
-                </span>
-                <span className={`log-dot st-${t.to}`} aria-label={STATE_META[t.to]?.label}>
-                  {STATE_META[t.to]?.icon}
-                </span>
-                <span className={`tx-${t.to}`}>{SHORT[t.to]}</span>
-              </li>
-            ))}
-          </ol>
-        )}
-      </section>
 
       {/* 점검 필요일 때만 원인 한 줄 (통신 두절·센서 이상) — 나머지 근거는 위 숫자와 겹친다 */}
       {j.state === STATES.CHECK && j.reason?.[0] && <p className="station-card-reason">{j.reason[0]}</p>}
