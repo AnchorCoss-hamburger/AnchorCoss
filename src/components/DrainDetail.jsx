@@ -156,7 +156,7 @@ export function DrainDetail({ station, now, onCollect, onScenario, backHref = nu
         <FlagTags flags={j.flags} />
 
         {/* 이 지점만 조작 (전체 제어는 상단바) */}
-        {station.live && (
+        {station.connected && (
           <span className="tag is-live" title="서버에 수신된 실물 센서 데이터로 판정 중">
             실시간 수신
           </span>
