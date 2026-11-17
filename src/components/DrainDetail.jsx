@@ -203,7 +203,7 @@ export function DrainDetail({ station, now, onCollect, onScenario, backHref = nu
           </div>
         </aside>
 
-        {/* 오른쪽 넓은 열: 숫자 카드 · 그래프 · 판정 근거 | 상태 비율 | 우천 영향 | 상태 전환 기록 */}
+        {/* 오른쪽 넓은 열: 핵심 숫자 4개 → 판정 근거 → 그래프 → (접힘) 보조 정보 */}
         <div className="detail-main">
           <dl className="detail-stats">
             <div className="stat is-main">
@@ -213,14 +213,6 @@ export function DrainDetail({ station, now, onCollect, onScenario, backHref = nu
             <div className="stat">
               <dt>수거 단계</dt>
               <dd className="num">{fmtStage(m.stage)}</dd>
-            </div>
-            <div className="stat">
-              <dt>막힘 점수</dt>
-              <dd className={`num tx-${j.state}`}>{j.score ?? "—"}</dd>
-            </div>
-            <div className="stat">
-              <dt>증가 속도</dt>
-              <dd className="num">{fmtRate(m.rateGPerMin)}</dd>
             </div>
             <div className="stat" title="현재 증가 속도가 이어진다고 가정한 예상">
               <dt>수거 기준 도달 예상</dt>
@@ -234,57 +226,64 @@ export function DrainDetail({ station, now, onCollect, onScenario, backHref = nu
               </dd>
             </div>
             <div className="stat">
-              <dt>강우</dt>
-              <dd className="num">{rain == null ? "—" : `${rain}mm/h`}</dd>
-            </div>
-            <div className="stat">
               <dt>마지막 수신</dt>
               <dd className={`num${j.state === STATES.CHECK ? " tx-check" : ""}`}>
                 {fmtAgo(clock, station.latest?.ts)}
               </dd>
             </div>
           </dl>
+          <p className="detail-subline">
+            막힘 점수 <b className={`num tx-${j.state}`}>{j.score ?? "—"}</b>
+            {" · "}증가 속도 <b className="num">{fmtRate(m.rateGPerMin)}</b>
+            {" · "}강우 <b className="num">{rain == null ? "—" : `${rain}mm/h`}</b>
+          </p>
+          <div className="panel detail-reason">
+            <h3 className="block-title">판정 근거</h3>
+            <ul className="reason-list">
+              {j.reason.map((r) => (
+                <li key={r}>
+                  <Emph text={r} />
+                </li>
+              ))}
+            </ul>
+          </div>
           <div className="panel">
             <h3 className="block-title">중량 변화 (최근 1시간)</h3>
             <WeightChart history={station.history} transitions={station.transitions} forecast={forecast} />
           </div>
-          <div className="detail-row is-three">
-            <div className="panel detail-info">
-              <div>
-                <h3 className="block-title">판정 근거</h3>
-                <ul className="reason-list">
-                  {j.reason.map((r) => (
-                    <li key={r}>
-                      <Emph text={r} />
-                    </li>
-                  ))}
-                </ul>
-              </div>
+          <details className="detail-more">
+            <summary>
+              더 보기{" "}
+              <span className="muted">
+                · {station.real ? "" : "통신 상태 · "}상태 비율 · 비 올 때 속도 · 상태 전환 기록
+              </span>
+            </summary>
+            <div className="detail-row is-three">
               {/* 실물 지점은 유선·외부 전원이라 신호·배터리가 없고, 마지막 수신은 숫자 카드에 있다 */}
-              {!station.real && (
+              <div className="panel panel-stack">
+                {!station.real && (
+                  <div>
+                    <h3 className="block-title">통신 상태</h3>
+                    <CommStatus station={station} now={now} showLast={false} />
+                  </div>
+                )}
                 <div>
-                  <h3 className="block-title">통신 상태</h3>
-                  <CommStatus station={station} now={now} showLast={false} />
+                  <h3 className="block-title">최근 1시간 상태 비율</h3>
+                  <StateShare station={station} clock={clock} />
                 </div>
-              )}
-            </div>
-            <div className="panel panel-stack">
-              <div>
-                <h3 className="block-title">최근 1시간 상태 비율</h3>
-                <StateShare station={station} clock={clock} />
               </div>
-              <div>
+              <div className="panel">
                 <h3 className="block-title">비가 올 때 쌓이는 속도</h3>
                 <RainCompare history={station.history} />
               </div>
-            </div>
-            <div className="panel">
-              <h3 className="block-title">상태 전환 기록</h3>
-              <div className="panel-scroll">
-                <Timeline transitions={station.transitions} />
+              <div className="panel">
+                <h3 className="block-title">상태 전환 기록</h3>
+                <div className="panel-scroll">
+                  <Timeline transitions={station.transitions} />
+                </div>
               </div>
             </div>
-          </div>
+          </details>
         </div>
       </div>
     </section>

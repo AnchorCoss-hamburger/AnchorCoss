@@ -32,6 +32,7 @@ export function MapView({
   onSelectRef.current = onSelect;
   const [ready, setReady] = useState(false);
   const [tilesFailed, setTilesFailed] = useState(false); // 오프라인 등으로 타일을 못 불러옴
+  const [showHot, setShowHot] = useState(false); // 상습 구간 점선 테두리 (기본은 꺼서 지도를 단순하게)
 
   // 지도 생성 (한 번)
   useEffect(() => {
@@ -99,7 +100,7 @@ export function MapView({
       const selected = s.id === selectedId;
       const el = m.getElement()?.querySelector(".map-marker");
       if (el) {
-        const hot = collectionHistory(s)?.hotspot;
+        const hot = showHot && collectionHistory(s)?.hotspot;
         el.className = `map-marker st-${st}${selected ? " is-selected" : ""}${st === STATES.DANGER ? " is-alert" : ""}${hot ? " is-hot" : ""}`;
         el.textContent = STATE_META[st].icon;
       }
@@ -121,7 +122,7 @@ export function MapView({
       map.fitBounds(L.latLngBounds(stations.map((s) => [s.lat, s.lng])), { padding: [48, 48] });
       ctx.fitted = true;
     }
-  }, [stations, selectedId, ready, route]);
+  }, [stations, selectedId, ready, route, showHot]);
 
   // 수거 경로 선 · 출발지 마커
   useEffect(() => {
@@ -184,9 +185,17 @@ export function MapView({
               {SHORT[st]}
             </li>
           ))}
-          <li title="최근 30일 동안 자주 수거한 지점 (가상 기록)">
-            <span className="legend-dot is-hot" aria-hidden="true" />
-            상습 구간
+          <li>
+            <button
+              type="button"
+              className={`legend-toggle${showHot ? " is-on" : ""}`}
+              aria-pressed={showHot}
+              onClick={() => setShowHot((v) => !v)}
+              title={`최근 30일 동안 자주 수거한 지점에 점선 테두리 ${showHot ? "숨기기" : "표시"} (가상 기록)`}
+            >
+              <span className="legend-dot is-hot" aria-hidden="true" />
+              상습 구간 {showHot ? "켜짐" : "꺼짐"}
+            </button>
           </li>
         </ul>
       </div>
