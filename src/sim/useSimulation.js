@@ -18,12 +18,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createEngine } from "./engine.js";
-import { createSimulator } from "./simulator.js";
+import { createSimulator, simStartTs } from "./simulator.js";
 
 const EVENT_LIMIT = 50;
 
 function makeEngine(seed, warmupSteps) {
-  const engine = createEngine({ sim: createSimulator({ seed, startTs: Date.now() }) });
+  const engine = createEngine({ sim: createSimulator({ seed, startTs: simStartTs() }) });
   for (let i = 0; i < warmupSteps; i++) engine.step(); // 시작부터 그래프가 비어 있지 않게
   return engine;
 }

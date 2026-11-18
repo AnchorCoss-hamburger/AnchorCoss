@@ -3,7 +3,7 @@
 // 실물 센서 데이터도 같은 Sample 포맷이므로, 판정·화면은 출처를 구분하지 않는다.
 
 import { getScenario } from "./scenario.js";
-import { MAP_CENTER } from "../config.js";
+import { MAP_CENTER, SIM_DATE } from "../config.js";
 
 /** 시드 고정 난수 (0~1) */
 export function mulberry32(seed) {
@@ -205,4 +205,11 @@ export function createSimulator({
       return get(id).elapsedSec / 60;
     },
   };
+}
+
+/** 시뮬레이션 시작 시각: 지금 시각(시:분:초)은 그대로, 날짜만 config.js SIM_DATE로 */
+export function simStartTs(now = Date.now(), { MONTH, DAY } = SIM_DATE) {
+  const d = new Date(now);
+  d.setMonth(MONTH - 1, DAY);
+  return d.getTime();
 }

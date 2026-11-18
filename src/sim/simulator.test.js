@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createSimulator, DEFAULT_STATIONS, rainExposure } from "./simulator.js";
+import { createSimulator, DEFAULT_STATIONS, rainExposure, simStartTs } from "./simulator.js";
 import { SCENARIOS, truthAt, getScenario } from "./scenario.js";
 
 const one = (scenarioId, opt = {}) =>
@@ -134,5 +134,17 @@ describe("날씨 비에 따른 추가 적재", () => {
       expect(e).toBeLessThanOrEqual(1.4);
     }
     expect(new Set(ex.map((e) => e.toFixed(2))).size).toBeGreaterThan(10);
+  });
+});
+
+describe("시뮬레이션 시작 날짜", () => {
+  it("시각은 그대로, 날짜만 11월 4일", () => {
+    const now = new Date(2026, 10, 18, 14, 25, 30).getTime();
+    const d = new Date(simStartTs(now));
+    expect([d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds()]).toEqual([2026, 11, 4, 14, 25, 30]);
+  });
+  it("31일인 달에서 바꿔도 날짜가 넘어가지 않는다", () => {
+    const d = new Date(simStartTs(new Date(2026, 9, 31, 9, 0, 0).getTime()));
+    expect([d.getMonth() + 1, d.getDate()]).toEqual([11, 4]);
   });
 });

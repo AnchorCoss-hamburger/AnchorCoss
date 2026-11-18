@@ -51,6 +51,10 @@ export const DEMO_FAST = Object.freeze({
   DEBOUNCE_SEC: 5,
 });
 
+// 시뮬레이션 시계의 시작 날짜 (상단바 "시뮬레이션 11. 4. ..."). 시각(시:분:초)은 페이지를 연 현재 시각 그대로.
+// 실시간 모드의 "실제" 시각과 센서 기록은 노트북 시계를 따르므로 영향 없음.
+export const SIM_DATE = Object.freeze({ MONTH: 11, DAY: 4 });
+
 export const TH = Object.freeze({
   WARN_TOTAL_G: 250, // 주의 기준 = 하드웨어 1단계 (총 중량, g)
   MID_TOTAL_G: 500, // 중간 눈금 = 하드웨어 2단계. 상태는 바꾸지 않고 근거 문구·그래프·게이지에 표시
