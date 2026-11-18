@@ -3,7 +3,7 @@
 
 import { useLayoutEffect, useRef, useState } from "react";
 import { StateBadge, FlagTags } from "./StateBadge.jsx";
-import { fmtAgo, fmtG, fmtStage, fmtDuration, etaToDanger, toChartData, downsample, sparkPath } from "../ui/format.js";
+import { fmtAgo, fmtG, shownWeight, fmtStage, fmtDuration, etaToDanger, toChartData, downsample, sparkPath } from "../ui/format.js";
 import { STATES } from "../logic/states.js";
 import { TH, HOTSPOT } from "../config.js";
 import { collectionHistory } from "../sim/history.js";
@@ -125,7 +125,7 @@ export function StationCard({ station, now: simNow, onClose, onDetail }) {
         <div className="is-wide">
           <dt>총 중량</dt>
           <dd>
-            <span className="num station-card-total">{fmtG(m.totalG)}</span>
+            <span className="num station-card-total">{fmtG(shownWeight(station))}</span>
             <Sparkline history={station.history} state={j.state} />
           </dd>
         </div>

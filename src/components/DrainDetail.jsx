@@ -19,6 +19,7 @@ import {
   rainFillRates,
   etaToDanger,
   forecastLine,
+  shownWeight,
 } from "../ui/format.js";
 import { TH } from "../config.js";
 import { STATES, STATE_META } from "../logic/states.js";
@@ -195,7 +196,7 @@ export function DrainDetail({ station, now, onCollect, onScenario, backHref = nu
         <aside className="detail-side">
           <div className="panel">
             <h3 className="block-title">로드셀</h3>
-            <LoadCellGauge sample={station.latest} metrics={j.metrics} state={j.state} fast={station.fastJudge} />
+            <LoadCellGauge sample={station.latest} metrics={j.metrics} state={j.state} fast={station.fastJudge} raw={station.connected} />
           </div>
           <div className="panel">
             <h3 className="block-title">지점 정보</h3>
@@ -208,7 +209,7 @@ export function DrainDetail({ station, now, onCollect, onScenario, backHref = nu
           <dl className="detail-stats">
             <div className="stat is-main">
               <dt>총 중량</dt>
-              <dd className="num">{fmtG(m.totalG)}</dd>
+              <dd className="num">{fmtG(shownWeight(station))}</dd>
             </div>
             <div className="stat">
               <dt>수거 단계</dt>

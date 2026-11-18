@@ -334,3 +334,14 @@ export function stateSegments(states) {
   });
   return out;
 }
+
+/**
+ * 화면에 보여 줄 총 중량.
+ * 실물 센서를 받는 중이면 그래프와 같은 "센서 최신값"을 바로 보여 준다 (판정은 그대로 평활값으로).
+ * 가상 지점은 노이즈(±100g)로 숫자가 튀지 않게 판정 평활값(최근 중앙값).
+ */
+export function shownWeight(station) {
+  const w = station?.latest?.weightG;
+  if (station?.connected && w != null && w >= 0) return w;
+  return station?.judgement?.metrics?.totalG ?? null;
+}

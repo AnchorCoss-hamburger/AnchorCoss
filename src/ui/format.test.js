@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { countByState, sortByPriority, fmtAgo, fmtG, rssiLevel, toChartData, downsample, rainSegments, collectTargets, fmtDistance, fmtDuration, filterStations, fmtTime, sparkPath, fmtStage, etaToDanger, stateDurations, rainFillRates, forecastLine, nextRain, stateSegments , timeTicks, fmtTick } from "./format.js";
+import { countByState, sortByPriority, fmtAgo, fmtG, rssiLevel, toChartData, downsample, rainSegments, collectTargets, fmtDistance, fmtDuration, filterStations, fmtTime, sparkPath, fmtStage, etaToDanger, stateDurations, rainFillRates, forecastLine, nextRain, stateSegments , timeTicks, fmtTick, shownWeight } from "./format.js";
 
 describe("downsample", () => {
   const pt = (ts, total, rain = 0) => ({ ts, total, rain });
@@ -300,5 +300,15 @@ describe("timeTicks / fmtTick (그래프 시간축)", () => {
   it("구간이 0이거나 거꾸로면 눈금 하나", () => {
     expect(timeTicks(1000, 1000).ticks).toEqual([1000]);
     expect(timeTicks(2000, 1000).ticks).toEqual([2000]);
+  });
+});
+
+describe("shownWeight (화면 총 중량)", () => {
+  const st = (connected, w, totalG) => ({ connected, latest: { weightG: w }, judgement: { metrics: { totalG } } });
+  it("실물 수신 중이면 센서 최신값", () => expect(shownWeight(st(true, 400, 12))).toBe(400));
+  it("가상 지점은 판정 평활값", () => expect(shownWeight(st(false, 400, 12))).toBe(12));
+  it("센서 이상(null·음수)이면 평활값", () => {
+    expect(shownWeight(st(true, null, 12))).toBe(12);
+    expect(shownWeight(st(true, -500, 12))).toBe(12);
   });
 });
