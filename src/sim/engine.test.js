@@ -153,3 +153,55 @@ describe("engine", () => {
     expect(snap.stations[0].judgement.flags).toContain("raining");
   });
 });
+
+describe("시연용 빠른 판정", () => {
+  const S = 1000;
+  function liveEngine() {
+    let wall = 1_000_000;
+    const engine = createEngine({ wallClock: () => wall });
+    engine.setRealStations(["st-1"]);
+    const feed = (sec, w) => {
+      const out = [];
+      for (let i = 0; i < sec; i++) {
+        wall += S;
+        out.push({ stationId: "st-1", ts: wall, weightG: w, rainMm: 0, rssi: null, batteryPct: null });
+      }
+      engine.ingestReal("st-1", out);
+    };
+    const state = () => engine.snapshot().stations.find((s) => s.id === "st-1").judgement.state;
+    return { engine, feed, state };
+  }
+
+  it("끄면 30초 넘게 지나야 주의, 켜면 10초 안에 주의", () => {
+    const off = liveEngine();
+    off.feed(60, 0);
+    off.feed(10, 400);
+    expect(off.state()).toBe("normal");
+
+    const on = liveEngine();
+    on.engine.setFastJudge(true);
+    on.feed(60, 0);
+    on.feed(10, 400);
+    expect(on.state()).toBe("warn");
+  });
+
+  it("켜는 순간 이미 받은 기록으로 바로 다시 판정", () => {
+    const e = liveEngine();
+    e.feed(60, 0);
+    e.feed(10, 400);
+    expect(e.state()).toBe("normal");
+    e.engine.setFastJudge(true);
+    expect(e.state()).toBe("warn");
+    e.engine.setFastJudge(false);
+    expect(e.state()).toBe("normal");
+  });
+
+  it("가상 지점은 빠른 판정의 영향을 받지 않는다", () => {
+    const e = liveEngine();
+    e.engine.setFastJudge(true);
+    expect(e.engine.fastJudge).toBe(true);
+    const before = e.engine.snapshot().stations.find((s) => s.id === "st-2").judgement;
+    e.engine.setFastJudge(false);
+    expect(e.engine.snapshot().stations.find((s) => s.id === "st-2").judgement).toEqual(before);
+  });
+});

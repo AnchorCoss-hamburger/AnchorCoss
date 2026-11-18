@@ -43,6 +43,14 @@ export const ROUTE = Object.freeze({
   MAX_POINTS: 30, // 한 번에 계산할 최대 지점 수
 });
 
+// 시연용 빠른 판정 (상단바 "빠른 반영", 실시간 모드의 실물 지점에만 적용)
+// 평소 설정(30초 중앙값 + 30초 확정 대기)은 노이즈에 강하지만 시연에서는 반영이 1분 가까이 늦다.
+// 켜면 중앙값 3초 · 확정 대기 5초로 줄여 올리자마자 바뀌게 한다. 판정 비교 페이지는 항상 TH 그대로 계산.
+export const DEMO_FAST = Object.freeze({
+  SMOOTH_SEC: 3,
+  DEBOUNCE_SEC: 5,
+});
+
 export const TH = Object.freeze({
   WARN_TOTAL_G: 250, // 주의 기준 = 하드웨어 1단계 (총 중량, g)
   MID_TOTAL_G: 500, // 중간 눈금 = 하드웨어 2단계. 상태는 바꾸지 않고 근거 문구·그래프·게이지에 표시

@@ -14,6 +14,7 @@
 // sim.reset()                      처음부터 다시
 // sim.setRealStations(ids)         실물 지점 지정 (실시간 모드). [] = 모두 가상
 // sim.ingestReal(id, samples, { silent })  서버에서 받은 실물 샘플 반영. silent면 알림 없이 (이력 복원용)
+// sim.fastJudge / setFastJudge(bool) 시연용 빠른 판정 (실물 지점만, config.js DEMO_FAST)
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createEngine } from "./engine.js";
@@ -42,6 +43,8 @@ export function useSimulation({ seed = 42, intervalMs = 1000, warmupSteps = 30, 
   const [events, setEvents] = useState([]);
   const [playing, setPlaying] = useState(autoPlay);
   const [speed, setSpeed] = useState(1);
+  const [fastJudge, setFastJudgeState] = useState(false);
+  const fastRef = useRef(false);
   const [runId, setRunId] = useState(0); // reset()마다 증가 — 화면 쪽 상태(알림 닫기 기록 등) 초기화용
 
   const pushEvents = useCallback((evs) => {
@@ -83,6 +86,15 @@ export function useSimulation({ seed = 42, intervalMs = 1000, warmupSteps = 30, 
     setScenario: useCallback((id, sc) => act((e) => e.setScenario(id, sc)), [act]),
     step: useCallback(() => advance(1), [advance]),
     setRealStations: useCallback((ids) => act((e) => e.setRealStations(ids)), [act]),
+    fastJudge,
+    setFastJudge: useCallback(
+      (on) => {
+        fastRef.current = Boolean(on);
+        setFastJudgeState(Boolean(on));
+        act((e) => e.setFastJudge(on));
+      },
+      [act],
+    ),
     ingestReal: useCallback(
       (id, samples, { silent = false } = {}) => {
         const evs = engineRef.current.ingestReal(id, samples);
@@ -93,6 +105,7 @@ export function useSimulation({ seed = 42, intervalMs = 1000, warmupSteps = 30, 
     ),
     reset: useCallback(() => {
       engineRef.current = makeEngine(seed, warmupSteps);
+      engineRef.current.setFastJudge(fastRef.current); // 처음부터 눌러도 빠른 반영 설정은 유지
       setSnap(engineRef.current.snapshot());
       setEvents([]);
       setRunId((n) => n + 1);

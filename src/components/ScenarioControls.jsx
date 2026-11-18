@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { WeatherInfo } from "./WeatherInfo.jsx";
 import { SensorFeedBadge } from "./SensorFeedBadge.jsx";
+import { TH, DEMO_FAST } from "../config.js";
 
 const SPEEDS = [1, 5, 20];
 const RAIN_MAX = 30;
@@ -84,6 +85,13 @@ export function ScenarioControls({
           <>
             <WeatherInfo weather={weather} />
             <SensorFeedBadge feed={feed} station={realStation} />
+            <label
+              className="control-check"
+              title={`시연용: 실물 센서 판정을 중앙값 ${DEMO_FAST.SMOOTH_SEC}초 · 확정 대기 ${DEMO_FAST.DEBOUNCE_SEC}초로 줄여 바로 반영 (평소 ${TH.SMOOTH_SEC}초 · ${TH.DEBOUNCE_SEC}초). 노이즈 필터는 약해짐`}
+            >
+              <input type="checkbox" checked={sim.fastJudge} onChange={(e) => sim.setFastJudge(e.target.checked)} />
+              빠른 반영
+            </label>
           </>
         ) : null}
       </div>

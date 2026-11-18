@@ -8,7 +8,7 @@
 
 import { createSimulator } from "./simulator.js";
 import { createJudge } from "../logic/judge.js";
-import { TH } from "../config.js";
+import { TH, DEMO_FAST } from "../config.js";
 
 /**
  * @param {Object} [opt]
@@ -27,15 +27,20 @@ export function createEngine({
   transitionLimit = 20,
   wallClock = () => Date.now(),
 } = {}) {
-  const fresh = () => ({
-    judge: createJudge(th),
+  // 시연용 빠른 판정: 켜면 실물 지점만 짧은 평활·확정 대기로 판정 (config.js DEMO_FAST)
+  const fastTh = Object.freeze({ ...th, ...DEMO_FAST });
+  let fast = false;
+  const thFor = (id) => (fast && realIds.has(id) ? fastTh : th);
+
+  const fresh = (id) => ({
+    judge: createJudge(thFor(id)),
     latest: null,
     history: [],
     judgement: null,
     transitions: [],
     quiet: false, // true면 다음 상태 전환 1회는 알리지 않음 (모드 전환 직후 잡음 방지)
   });
-  const per = new Map(sim.stations().map((s) => [s.id, fresh()]));
+  const per = new Map(sim.stations().map((s) => [s.id, fresh(s.id)]));
   let realIds = new Set();
   // 실물 지점 중 "지금 센서가 보낸" 데이터를 실제로 받은 지점 (서버에 남은 오래된 기록만으로는 연결로 보지 않는다)
   let connectedIds = new Set();
@@ -65,11 +70,19 @@ export function createEngine({
   /** 지점 상태 초기화 (모드 전환·시나리오 변경) */
   function resetStation(id, now) {
     const keep = per.get(id).transitions; // 전환 기록은 남긴다
-    const p = fresh();
+    const p = fresh(id);
     p.transitions = keep;
     p.quiet = true;
     per.set(id, p);
     ingest(id, now, null); // 판정값을 비워 두지 않기 위해 (데이터 없음 → 점검 필요)
+  }
+
+  /** 판정기를 현재 설정으로 다시 만들고 보관 이력으로 판정을 다시 채운다 (알림은 내지 않음) */
+  function rejudge(id) {
+    const p = per.get(id);
+    p.judge = createJudge(thFor(id));
+    for (const s of p.history) p.judge.update({ now: s.ts, sample: s });
+    p.judgement = p.judge.update({ now: wallClock(), sample: null }).judgement;
   }
 
   return {
@@ -96,13 +109,14 @@ export function createEngine({
      */
     setRealStations(ids) {
       const next = new Set(ids.filter((id) => per.has(id)));
-      for (const id of new Set([...realIds, ...next])) {
-        if (realIds.has(id) !== next.has(id)) {
+      const prev = realIds;
+      realIds = next; // 먼저 바꿔야 초기화한 판정기가 맞는 설정(빠른 판정 여부)을 쓴다
+      for (const id of new Set([...prev, ...next])) {
+        if (prev.has(id) !== next.has(id)) {
           resetStation(id, next.has(id) ? wallClock() : sim.now);
           connectedIds.delete(id); // 모드가 바뀌면 연결 여부도 처음부터
         }
       }
-      realIds = next;
     },
 
     /**
@@ -142,6 +156,7 @@ export function createEngine({
             name: s.real && !connected ? s.name.replace("(실물)", "(실물·연결 전)") : s.name,
             live, // 실시간 모드에서 실물 지점으로 지정됨 (조작 제한·시계 기준)
             connected, // 센서 데이터를 실제로 받은 지점 (이름·"실시간 수신" 표시 기준)
+            fastJudge: fast && live, // 시연용 빠른 판정이 적용 중인 지점
             clockNow: live ? wall : sim.now, // "N분 전" 계산에 쓸 시계
             latest: p.latest,
             history: p.history.slice(),
@@ -150,6 +165,15 @@ export function createEngine({
           };
         }),
       };
+    },
+
+    /** 시연용 빠른 판정 켜기/끄기 (실물 지점에만 적용, 지금까지 받은 이력으로 바로 다시 판정) */
+    setFastJudge(on) {
+      fast = Boolean(on);
+      for (const id of realIds) rejudge(id);
+    },
+    get fastJudge() {
+      return fast;
     },
 
     collect: (id) => sim.collect(id),

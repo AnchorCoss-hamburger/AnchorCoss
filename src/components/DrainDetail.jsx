@@ -195,7 +195,7 @@ export function DrainDetail({ station, now, onCollect, onScenario, backHref = nu
         <aside className="detail-side">
           <div className="panel">
             <h3 className="block-title">로드셀</h3>
-            <LoadCellGauge sample={station.latest} metrics={j.metrics} state={j.state} />
+            <LoadCellGauge sample={station.latest} metrics={j.metrics} state={j.state} fast={station.fastJudge} />
           </div>
           <div className="panel">
             <h3 className="block-title">지점 정보</h3>

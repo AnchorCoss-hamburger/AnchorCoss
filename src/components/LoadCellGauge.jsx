@@ -8,7 +8,7 @@
 //  - 기준선은 판정 기준인 주의(1단계)와 수거(3단계·위험)를 그린다
 //  - 센서 이상(음수·측정 실패·범위 초과)은 가장 최근 원시 샘플로 판단해 빗금 + "이상"
 
-import { TH } from "../config.js";
+import { TH, DEMO_FAST } from "../config.js";
 import { STATES } from "../logic/states.js";
 import { fmtG } from "../ui/format.js";
 
@@ -17,10 +17,10 @@ const pct = (v) => `${Math.min(100, Math.max(0, (v / SCALE_MAX) * 100))}%`;
 const valid = (v) => v != null && v >= 0 && v <= TH.MAX_VALID_G;
 
 /**
- * @param {{ sample: object|null, metrics: object, state: string }} props
+ * @param {{ sample: object|null, metrics: object, state: string, fast?: boolean }} props  fast: 시연용 빠른 판정 중
  *   sample: 가장 최근 원시 샘플 (센서 이상 판단용), metrics: 판정의 평활값
  */
-export function LoadCellGauge({ sample, metrics, state }) {
+export function LoadCellGauge({ sample, metrics, state, fast = false }) {
   // 아직 수신한 샘플이 없을 때 (시나리오 변경 직후 등) — "이상"과 구분해서 표시
   if (!sample) return <p className="muted gauge-empty">수신 대기 중…</p>;
 
@@ -59,7 +59,7 @@ export function LoadCellGauge({ sample, metrics, state }) {
         </span>
       </div>
       <p className="gauge-note muted">
-        눈금 최대 {fmtG(SCALE_MAX)} · 최근 {TH.SMOOTH_SEC}초 중앙값
+        눈금 최대 {fmtG(SCALE_MAX)} · 최근 {fast ? DEMO_FAST.SMOOTH_SEC : TH.SMOOTH_SEC}초 중앙값{fast && " (빠른 반영)"}
       </p>
     </div>
   );
