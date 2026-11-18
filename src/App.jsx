@@ -99,10 +99,20 @@ export default function App() {
   const feed = useSensorFeed({ enabled: live, stationId: REAL_STATION_ID, onSamples, resetKey: sim.runId });
   const realStation = sim.stations.find((s) => s.id === REAL_STATION_ID) ?? null;
 
+  // 실물 지점은 실시간 모드에서만 보인다 (시뮬레이션 모드에서는 가상 지점만)
+  const stations = useMemo(() => (live ? sim.stations : sim.stations.filter((s) => !s.real)), [live, sim.stations]);
+  const events = useMemo(() => {
+    const ids = new Set(stations.map((s) => s.id));
+    return sim.events.filter((e) => ids.has(e.stationId));
+  }, [stations, sim.events]);
+
   // 메인 필터: 실물/가상, 상태 (페이지를 옮겨도 유지)
   const [source, setSource] = useState("all");
+  useEffect(() => {
+    if (!live) setSource("all"); // 시뮬레이션 모드에는 실물 지점이 없어 실물/가상 선택을 숨김
+  }, [live]);
   const [stateFilter, setStateFilter] = useState(null);
-  const bySource = useMemo(() => filterStations(sim.stations, { source }), [sim.stations, source]);
+  const bySource = useMemo(() => filterStations(stations, { source }), [stations, source]);
   const shown = useMemo(() => filterStations(bySource, { state: stateFilter }), [bySource, stateFilter]);
   // 메인에서 선택한 지점 → 지도 위 요약 카드 (필터로 빠지면 숨김)
   const [selectedId, setSelectedId] = useState(null);
@@ -110,10 +120,10 @@ export default function App() {
 
   // 수거 경로 (수거 경로 페이지에서만 계산): 위험(+주의) 지점을 출발지에서 도는 순서와 도로 경로
   const [routeWarn, setRouteWarn] = useState(true);
-  const targets = useMemo(() => collectTargets(sim.stations, { includeWarn: routeWarn }), [sim.stations, routeWarn]);
+  const targets = useMemo(() => collectTargets(stations, { includeWarn: routeWarn }), [stations, routeWarn]);
   const route = useRoute({ enabled: page.page === "route", depot: DEPOT, points: targets });
 
-  const station = page.page === "station" ? (sim.stations.find((s) => s.id === page.id) ?? null) : null;
+  const station = page.page === "station" ? (stations.find((s) => s.id === page.id) ?? null) : null;
   // 메인에서 요약 카드가 열려 있으면 알림 팝업을 카드 왼쪽으로 비켜 띄운다 (styles.css .has-card)
   const cardOpen = page.page === "main" && selected != null;
 
@@ -134,8 +144,8 @@ export default function App() {
         />
         {/* key=runId: "처음부터"를 누르면 알림 닫기 기록·토스트도 초기화 */}
         <WarningBanner warnings={warnings} />
-        <Alerts key={sim.runId} stations={sim.stations} events={sim.events} onSelect={openStation} />
-        <RainAdvisory advisory={advisory} stations={sim.stations} onSelect={openStation} />
+        <Alerts key={sim.runId} stations={stations} events={events} onSelect={openStation} />
+        <RainAdvisory advisory={advisory} stations={stations} onSelect={openStation} />
       </div>
 
       {page.page === "main" && (
@@ -144,13 +154,13 @@ export default function App() {
             <Summary
               stations={bySource}
               source={source}
-              onSource={setSource}
+              onSource={live ? setSource : null}
               state={stateFilter}
               onState={setStateFilter}
             />
             <PriorityList
               stations={shown}
-              events={sim.events}
+              events={events}
               selectedId={selected?.id ?? null}
               onSelect={setSelectedId}
             />
@@ -186,7 +196,11 @@ export default function App() {
               <a className="back-link btn btn-sm" href={paths.main()}>
                 ← 대시보드
               </a>
-              <p className="muted">지점을 찾을 수 없습니다 ({page.id}).</p>
+              <p className="muted">
+                {sim.stations.some((s) => s.id === page.id && s.real)
+                  ? "실물 지점은 실시간 모드에서만 볼 수 있습니다. 상단바에서 '실시간'을 누르세요."
+                  : `지점을 찾을 수 없습니다 (${page.id}).`}
+              </p>
             </section>
           )}
         </main>
@@ -201,7 +215,7 @@ export default function App() {
       {page.page === "route" && (
         <main className="page route-page">
           <MapView
-            stations={sim.stations}
+            stations={stations}
             onSelect={openStation}
             route={route.data}
             depot={DEPOT}
@@ -212,7 +226,7 @@ export default function App() {
             includeWarn={routeWarn}
             onIncludeWarn={setRouteWarn}
             route={route}
-            stations={sim.stations}
+            stations={stations}
             depotName={DEPOT.name}
             onSelect={openStation}
           />

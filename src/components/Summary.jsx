@@ -19,6 +19,7 @@ const pct = (n, total) => (total ? Math.round((n / total) * 100) : 0);
  * - 실물/가상 선택: 개수와 목록·지도가 선택한 지점만 대상으로 바뀐다
  * - 상태 줄을 누르면 그 상태만 보기, 다시 누르거나 "필터 해제"를 누르면 해제
  * stations: 실물/가상 필터를 적용한 지점 (상태 필터 적용 전)
+ * onSource가 없으면(시뮬레이션 모드: 실물 지점 없음) 실물/가상 선택을 숨긴다
  */
 export function Summary({ stations, source, onSource, state, onState }) {
   const counts = countByState(stations);
@@ -29,18 +30,20 @@ export function Summary({ stations, source, onSource, state, onState }) {
     <section className="card summary" aria-label="상태 요약">
       <div className="summary-head">
         <div className="card-title summary-title">상태 요약</div>
-        <span className="btn-group" role="group" aria-label="실물·가상 지점 선택">
-          {SOURCES.map((s) => (
-            <button
-              key={s.id}
-              className={`btn btn-sm${source === s.id ? " is-active" : ""}`}
-              aria-pressed={source === s.id}
-              onClick={() => onSource(s.id)}
-            >
-              {s.label}
-            </button>
-          ))}
-        </span>
+        {onSource && (
+          <span className="btn-group" role="group" aria-label="실물·가상 지점 선택">
+            {SOURCES.map((s) => (
+              <button
+                key={s.id}
+                className={`btn btn-sm${source === s.id ? " is-active" : ""}`}
+                aria-pressed={source === s.id}
+                onClick={() => onSource(s.id)}
+              >
+                {s.label}
+              </button>
+            ))}
+          </span>
+        )}
       </div>
 
       <p className="summary-lead">
