@@ -9,7 +9,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const POLL_MS = 3000;
+const POLL_MS = 1000; // 같은 노트북의 서버라 1초마다 물어봐도 부담 없음 (센서도 1초 주기)
 const HISTORY_MS = 60 * 60 * 1000;
 const LIMIT = 4000; // 1초 간격이면 1시간 = 3600건 (서버 최대 5000)
 

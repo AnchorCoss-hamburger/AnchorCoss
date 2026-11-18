@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { WeatherInfo } from "./WeatherInfo.jsx";
 import { SensorFeedBadge } from "./SensorFeedBadge.jsx";
-import { TH, DEMO_FAST } from "../config.js";
+import { TH } from "../config.js";
 
 const SPEEDS = [1, 5, 20];
 const RAIN_MAX = 30;
@@ -87,7 +87,7 @@ export function ScenarioControls({
             <SensorFeedBadge feed={feed} station={realStation} />
             <label
               className="control-check"
-              title={`시연용: 실물 센서 판정을 중앙값 ${DEMO_FAST.SMOOTH_SEC}초 · 확정 대기 ${DEMO_FAST.DEBOUNCE_SEC}초로 줄여 바로 반영 (평소 ${TH.SMOOTH_SEC}초 · ${TH.DEBOUNCE_SEC}초). 노이즈 필터는 약해짐`}
+              title={`시연용: 실물 센서 값이 들어오는 즉시 상태를 바꿈. 끄면 원래 방식(${TH.SMOOTH_SEC}초 중앙값 · ${TH.DEBOUNCE_SEC}초 확정 대기 · 급변 1회 무시) — 실측 비교 실험·툭 치기 시연은 끄고 할 것`}
             >
               <input type="checkbox" checked={sim.fastJudge} onChange={(e) => sim.setFastJudge(e.target.checked)} />
               빠른 반영

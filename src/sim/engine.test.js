@@ -185,6 +185,16 @@ describe("시연용 빠른 판정", () => {
     expect(on.state()).toBe("warn");
   });
 
+  it("켜면 값이 들어오는 즉시 상태가 바뀐다 (큰 급변도 무시하지 않음)", () => {
+    const e = liveEngine();
+    e.engine.setFastJudge(true);
+    e.feed(10, 0);
+    e.feed(1, 300);
+    expect(e.state()).toBe("warn");
+    e.feed(1, 1200);
+    expect(e.state()).toBe("danger");
+  });
+
   it("켜는 순간 이미 받은 기록으로 바로 다시 판정", () => {
     const e = liveEngine();
     e.feed(60, 0);

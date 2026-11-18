@@ -8,7 +8,7 @@
 //  - 기준선은 판정 기준인 주의(1단계)와 수거(3단계·위험)를 그린다
 //  - 센서 이상(음수·측정 실패·범위 초과)은 가장 최근 원시 샘플로 판단해 빗금 + "이상"
 
-import { TH, DEMO_FAST } from "../config.js";
+import { TH } from "../config.js";
 import { STATES } from "../logic/states.js";
 import { fmtG } from "../ui/format.js";
 
@@ -61,7 +61,7 @@ export function LoadCellGauge({ sample, metrics, state, fast = false, raw = fals
       </div>
       <p className="gauge-note muted">
         눈금 최대 {fmtG(SCALE_MAX)} ·{" "}
-        {raw ? "센서 최신값" : `최근 ${fast ? DEMO_FAST.SMOOTH_SEC : TH.SMOOTH_SEC}초 중앙값${fast ? " (빠른 반영)" : ""}`}
+        {raw ? "센서 최신값" : fast ? "빠른 반영" : `최근 ${TH.SMOOTH_SEC}초 중앙값`}
       </p>
     </div>
   );

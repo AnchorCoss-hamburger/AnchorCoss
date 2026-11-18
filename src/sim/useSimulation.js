@@ -37,14 +37,18 @@ function makeEngine(seed, warmupSteps) {
  */
 export function useSimulation({ seed = 42, intervalMs = 1000, warmupSteps = 30, autoPlay = false } = {}) {
   const engineRef = useRef(null);
-  if (!engineRef.current) engineRef.current = makeEngine(seed, warmupSteps);
+  if (!engineRef.current) {
+    engineRef.current = makeEngine(seed, warmupSteps);
+    engineRef.current.setFastJudge(true);
+  }
 
   const [snap, setSnap] = useState(() => engineRef.current.snapshot());
   const [events, setEvents] = useState([]);
   const [playing, setPlaying] = useState(autoPlay);
   const [speed, setSpeed] = useState(1);
-  const [fastJudge, setFastJudgeState] = useState(false);
-  const fastRef = useRef(false);
+  // 빠른 반영은 기본으로 켜 둔다 (실물 지점에만 적용되므로 시뮬레이션 모드에는 영향 없음)
+  const [fastJudge, setFastJudgeState] = useState(true);
+  const fastRef = useRef(true);
   const [runId, setRunId] = useState(0); // reset()마다 증가 — 화면 쪽 상태(알림 닫기 기록 등) 초기화용
 
   const pushEvents = useCallback((evs) => {
