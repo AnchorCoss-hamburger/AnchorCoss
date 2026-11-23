@@ -15,25 +15,22 @@ const label = (s) => STATE_META[s].label;
 const pad = (vals, widths) => vals.map((v, i) => String(v).padEnd(widths[i])).join(" ");
 
 // 상세 표
-const W = [6, 6, 6, 6, 5, 16, 16, 16, 20];
+const W = [6, 7, 5, 16, 16, 16, 20];
 for (const sc of detail) {
   const { rows } = runScenario(sc.id);
   console.log(`\n■ ${sc.id} — ${sc.name}: ${sc.description}`);
-  console.log(pad(["t(분)", "좌", "우", "합계", "강우", "정답", "판정", "단순", "플래그"], W));
+  console.log(pad(["t(분)", "총 중량", "강우", "정답", "판정", "단순", "플래그"], W));
   rows.forEach((r, i) => {
     const onRow = i % ((everyMin * 60) / 10) === 0;
     if (!onRow && !r.transition) return; // 전환 시점은 항상 출력
     const s = r.sample;
     const v = (x) => (x == null ? "null" : x);
-    const sum = s && s.leftG != null && s.rightG != null ? s.leftG + s.rightG : "—";
     const judged = label(r.judged) + (r.transition ? " ◀" : "");
     console.log(
       pad(
         [
           r.t.toFixed(1),
-          s ? v(s.leftG) : "—",
-          s ? v(s.rightG) : "—",
-          sum,
+          s ? v(s.weightG) : "—",
           s ? s.rainMm : "—",
           label(r.truth),
           judged,

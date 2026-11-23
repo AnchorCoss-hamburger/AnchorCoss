@@ -8,8 +8,9 @@ const ROUTES = {
   "/api/weather": "/api/weather.js",
   "/api/sensor-data": "/api/sensor-data.js",
   "/api/stations": "/api/stations.js",
+  "/api/route": "/api/route.js",
 };
-const ENV_KEYS = ["KMA_SERVICE_KEY", "DEVICE_TOKEN", "DB_PATH"];
+const ENV_KEYS = ["KMA_SERVICE_KEY", "DEVICE_TOKEN", "DB_PATH", "OSRM_URL", "ROUTE_CACHE_PATH"];
 
 /** Vercel 응답 객체와 같은 모양 (status().json(), setHeader) */
 function shim(res) {

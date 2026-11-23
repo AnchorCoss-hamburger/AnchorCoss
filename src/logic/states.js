@@ -18,17 +18,15 @@ export const STATE_META = Object.freeze({
 export const FLAGS = Object.freeze({
   RAINING: "raining", // 우천 중
   FAST: "fast", // 급증
-  IMBALANCE: "imbalance", // 편중 (한쪽 쏠림)
 });
 
 export const FLAG_LABEL = Object.freeze({
   raining: "우천 중",
   fast: "급증",
-  imbalance: "편중",
 });
 
 // 점검 필요의 세부 원인
 export const CHECK_CAUSE = Object.freeze({
   STALE: "stale", // 통신 두절
-  SENSOR: "sensor", // 센서 이상 (음수/범위 초과/채널 누락)
+  SENSOR: "sensor", // 센서 이상 (음수/범위 초과/측정 실패)
 });

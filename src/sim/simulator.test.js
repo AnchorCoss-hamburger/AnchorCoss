@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createSimulator, DEFAULT_STATIONS } from "./simulator.js";
+import { createSimulator, DEFAULT_STATIONS, rainExposure, simStartTs } from "./simulator.js";
 import { SCENARIOS, truthAt, getScenario } from "./scenario.js";
 
 const one = (scenarioId, opt = {}) =>
@@ -56,24 +56,24 @@ describe("simulator", () => {
     }
   });
 
-  it("센서 이상: 음수와 채널 누락(null)이 그대로 전달", () => {
+  it("센서 이상: 음수와 측정 실패(null)가 그대로 전달", () => {
     const sim = one("sensorFault");
     const byMin = {};
     for (let sec = 0; sec < 50 * 60; sec += 10) byMin[sec / 60] = sim.tick()[0].sample;
-    expect(byMin[20].rightG).toBe(-350);
-    expect(byMin[37].rightG).toBeNull();
-    expect(byMin[45].rightG).not.toBeNull(); // 복구 후 정상값 (노이즈로 0일 수 있음)
-    expect(byMin[45].rightG).toBeGreaterThanOrEqual(0);
+    expect(byMin[20].weightG).toBe(-350);
+    expect(byMin[37].weightG).toBeNull();
+    expect(byMin[45].weightG).not.toBeNull(); // 복구 후 정상값
+    expect(byMin[45].weightG).toBeGreaterThanOrEqual(0);
   });
 
   it("수거(collect) 후 중량이 0 근처로 떨어진다", () => {
     const sim = one("gradual");
     for (let i = 0; i < 80 * 6; i++) sim.tick(); // 80분
     const before = sim.tick()[0].sample;
-    expect(before.leftG + before.rightG).toBeGreaterThan(1000); // 위험(총 1000g) 이상
+    expect(before.weightG).toBeGreaterThan(1000); // 위험(총 1000g) 이상
     sim.collect("x");
     const after = sim.tick()[0].sample;
-    expect(after.leftG + after.rightG).toBeLessThan(250); // 주의 기준 미만 (노이즈 σ40g 고려)
+    expect(after.weightG).toBeLessThan(250); // 주의 기준 미만 (노이즈 σ40g 고려)
   });
 
   it("강우 수동 입력이 시나리오 값을 덮어쓴다", () => {
@@ -99,6 +99,52 @@ describe("simulator", () => {
     sim.setScenario("x", "collect");
     expect(sim.elapsedMin("x")).toBe(0);
     const s = sim.tick()[0].sample;
-    expect(s.leftG + s.rightG).toBeGreaterThan(900); // collect 시나리오 시작 ≈1100g
+    expect(s.weightG).toBeGreaterThan(900); // collect 시나리오 시작 ≈1200g
+  });
+});
+
+describe("날씨 비에 따른 추가 적재", () => {
+  // 늘 비슷한 값인 normal 시나리오에 전체 강우를 걸어 비교 (노이즈는 같은 seed라 같다)
+  const run = (rain, minutes = 20) => {
+    const sim = one("normal", { seed: 7 });
+    if (rain != null) sim.setRain(rain);
+    let last;
+    for (let i = 0; i < (minutes * 60) / sim.stepSec; i++) last = sim.tick()[0].sample;
+    return { sim, w: last.weightG };
+  };
+
+  it("맑음 < 보통 비(5mm/h) < 호우(30mm/h)", () => {
+    const dry = run(null).w;
+    const light = run(5).w;
+    const heavy = run(30).w;
+    expect(light).toBeGreaterThan(dry + 50);
+    expect(heavy).toBeGreaterThan(light + 400);
+  });
+
+  it("수거하면 비로 쌓인 것도 함께 치운다", () => {
+    const { sim } = run(30);
+    sim.collect("x");
+    expect(sim.tick()[0].sample.weightG).toBeLessThan(250);
+  });
+
+  it("지점마다 노출 정도가 다르고 0.6~1.4 범위", () => {
+    const ex = DEFAULT_STATIONS.map((s) => rainExposure(s.id));
+    for (const e of ex) {
+      expect(e).toBeGreaterThanOrEqual(0.6);
+      expect(e).toBeLessThanOrEqual(1.4);
+    }
+    expect(new Set(ex.map((e) => e.toFixed(2))).size).toBeGreaterThan(10);
+  });
+});
+
+describe("시뮬레이션 시작 날짜", () => {
+  it("시각은 그대로, 날짜만 11월 4일", () => {
+    const now = new Date(2026, 10, 18, 14, 25, 30).getTime();
+    const d = new Date(simStartTs(now));
+    expect([d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds()]).toEqual([2026, 11, 4, 14, 25, 30]);
+  });
+  it("31일인 달에서 바꿔도 날짜가 넘어가지 않는다", () => {
+    const d = new Date(simStartTs(new Date(2026, 9, 31, 9, 0, 0).getTime()));
+    expect([d.getMonth() + 1, d.getDate()]).toEqual([11, 4]);
   });
 });

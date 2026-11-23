@@ -34,6 +34,11 @@ export function WeatherInfo({ weather }) {
       <span className={`tag${raining ? " is-rain" : ""}`}>
         {data.ptyLabel} · <span className="num">{data.rainMm}mm/h</span>
       </span>
+      {data.todayRainMm != null && (
+        <span className="muted num" title="오늘 01시부터 지금까지 1시간 강수량 합계 (기상청 초단기실황)">
+          오늘 {data.todayRainMm}mm
+        </span>
+      )}
       <span className="muted num">{fmtBase(data.baseDate, data.baseTime)}</span>
       {error && (
         <span className="tx-warn" title={`최근 갱신 실패: ${error}`} aria-label={`최근 갱신 실패: ${error}`}>

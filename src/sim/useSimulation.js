@@ -5,7 +5,7 @@
 // sim.events       최근 상태 전환 이벤트 (최신순, 최대 50) — 배너/토스트용 { id, stationId, ts, from, to, reason }
 // sim.runId        reset()마다 1씩 증가. 화면 상태를 초기화하려면 컴포넌트 key로 쓴다
 // sim.now          시뮬레이션 현재 시각 (epoch ms)
-// sim.playing / setPlaying(bool)   재생·일시정지
+// sim.playing / setPlaying(bool)   재생·일시정지 (처음에는 일시정지 — 재생 버튼을 눌러야 시나리오가 진행)
 // sim.speed / setSpeed(n)          배속 (1틱 = 10초, 1× = 실제 1초마다 1틱)
 // sim.rainOverride / setRain(mm|null)  강우 수동 입력 (null = 시나리오 값)
 // sim.collect(stationId)           수거(리셋)
@@ -14,15 +14,16 @@
 // sim.reset()                      처음부터 다시
 // sim.setRealStations(ids)         실물 지점 지정 (실시간 모드). [] = 모두 가상
 // sim.ingestReal(id, samples, { silent })  서버에서 받은 실물 샘플 반영. silent면 알림 없이 (이력 복원용)
+// sim.fastJudge / setFastJudge(bool) 시연용 빠른 판정 (실물 지점만, config.js DEMO_FAST)
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createEngine } from "./engine.js";
-import { createSimulator } from "./simulator.js";
+import { createSimulator, simStartTs } from "./simulator.js";
 
 const EVENT_LIMIT = 50;
 
 function makeEngine(seed, warmupSteps) {
-  const engine = createEngine({ sim: createSimulator({ seed, startTs: Date.now() }) });
+  const engine = createEngine({ sim: createSimulator({ seed, startTs: simStartTs() }) });
   for (let i = 0; i < warmupSteps; i++) engine.step(); // 시작부터 그래프가 비어 있지 않게
   return engine;
 }
@@ -32,15 +33,22 @@ function makeEngine(seed, warmupSteps) {
  * @param {number} [opt.seed]        같은 seed면 시연마다 같은 흐름
  * @param {number} [opt.intervalMs]  실제 시간 기준 틱 간격
  * @param {number} [opt.warmupSteps] 시작 전에 미리 돌릴 틱 수 (기본 30 = 5분)
+ * @param {boolean}[opt.autoPlay]    열자마자 재생할지 (기본 false)
  */
-export function useSimulation({ seed = 42, intervalMs = 1000, warmupSteps = 30 } = {}) {
+export function useSimulation({ seed = 42, intervalMs = 1000, warmupSteps = 30, autoPlay = false } = {}) {
   const engineRef = useRef(null);
-  if (!engineRef.current) engineRef.current = makeEngine(seed, warmupSteps);
+  if (!engineRef.current) {
+    engineRef.current = makeEngine(seed, warmupSteps);
+    engineRef.current.setFastJudge(true);
+  }
 
   const [snap, setSnap] = useState(() => engineRef.current.snapshot());
   const [events, setEvents] = useState([]);
-  const [playing, setPlaying] = useState(true);
+  const [playing, setPlaying] = useState(autoPlay);
   const [speed, setSpeed] = useState(1);
+  // 빠른 반영은 기본으로 켜 둔다 (실물 지점에만 적용되므로 시뮬레이션 모드에는 영향 없음)
+  const [fastJudge, setFastJudgeState] = useState(true);
+  const fastRef = useRef(true);
   const [runId, setRunId] = useState(0); // reset()마다 증가 — 화면 쪽 상태(알림 닫기 기록 등) 초기화용
 
   const pushEvents = useCallback((evs) => {
@@ -82,6 +90,15 @@ export function useSimulation({ seed = 42, intervalMs = 1000, warmupSteps = 30 }
     setScenario: useCallback((id, sc) => act((e) => e.setScenario(id, sc)), [act]),
     step: useCallback(() => advance(1), [advance]),
     setRealStations: useCallback((ids) => act((e) => e.setRealStations(ids)), [act]),
+    fastJudge,
+    setFastJudge: useCallback(
+      (on) => {
+        fastRef.current = Boolean(on);
+        setFastJudgeState(Boolean(on));
+        act((e) => e.setFastJudge(on));
+      },
+      [act],
+    ),
     ingestReal: useCallback(
       (id, samples, { silent = false } = {}) => {
         const evs = engineRef.current.ingestReal(id, samples);
@@ -92,6 +109,7 @@ export function useSimulation({ seed = 42, intervalMs = 1000, warmupSteps = 30 }
     ),
     reset: useCallback(() => {
       engineRef.current = makeEngine(seed, warmupSteps);
+      engineRef.current.setFastJudge(fastRef.current); // 처음부터 눌러도 빠른 반영 설정은 유지
       setSnap(engineRef.current.snapshot());
       setEvents([]);
       setRunId((n) => n + 1);

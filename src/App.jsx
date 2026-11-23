@@ -1,26 +1,34 @@
 // 대시보드 레이아웃 (docs/DESIGN.md 4장)
 // useSimulation()은 여기서 한 번만 호출하고, 하위 컴포넌트에는 props로 내려준다.
-import { useCallback, useEffect, useState } from "react";
+// 페이지(#/ 메인, #/station/<id> 지점 상세, #/route 수거 경로)를 옮겨도 시뮬레이션은 이어진다.
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSimulation } from "./sim/useSimulation.js";
 import { useWeather } from "./sim/useWeather.js";
 import { useSensorFeed } from "./sim/useSensorFeed.js";
+import { useRoute } from "./sim/useRoute.js";
 import { DEFAULT_STATIONS } from "./sim/simulator.js";
 import { TopBar } from "./components/TopBar.jsx";
 import { Summary } from "./components/Summary.jsx";
 import { PriorityList } from "./components/PriorityList.jsx";
 import { MapView } from "./components/MapView.jsx";
 import { DrainDetail } from "./components/DrainDetail.jsx";
+import { RoutePanel } from "./components/RoutePanel.jsx";
+import { StationCard } from "./components/StationCard.jsx";
+import { RainAdvisory } from "./components/RainAdvisory.jsx";
+import { WarningBanner } from "./components/WarningBanner.jsx";
+import { ComparePage } from "./components/ComparePage.jsx";
 import { Alerts } from "./components/Toasts.jsx";
-import { sortByPriority } from "./ui/format.js";
+import { collectTargets, filterStations, nextRain } from "./ui/format.js";
+import { useHashRoute, navigate, paths } from "./ui/router.js";
+import { DEPOT, FORECAST, TH } from "./config.js";
 
 // 실물 센서를 연결할 지점 (기본: 빗물받이 #1)
 const REAL_STATION_ID = DEFAULT_STATIONS.find((s) => s.real)?.id ?? null;
 
 export default function App() {
   const sim = useSimulation();
-  // 처음에는 우선순위 1위 지점을 선택
-  const [selectedId, setSelectedId] = useState(() => sortByPriority(sim.stations)[0]?.id ?? null);
-  const selected = sim.stations.find((s) => s.id === selectedId) ?? null;
+  const page = useHashRoute();
+  const openStation = useCallback((id) => navigate(paths.station(id)), []);
 
   // 데이터 모드
   //  "sim":  모든 지점 가상, 강우는 시나리오 또는 수동 입력
@@ -39,6 +47,49 @@ export default function App() {
     // runId: "처음부터"로 시뮬레이터가 새로 만들어져도 다시 적용
   }, [live, liveRain, sim.runId, sim.setRain]);
 
+  // 날씨 상황 (시뮬레이션 모드에서 하나만 고름): "none" 맑음 / "forecast" 비 예보 / "warning" 호우특보
+  //  비 예보: DEMO_LEAD_MIN분 뒤 비 예보 → 그 시각이 되면 실제로 비가 내림(강우 수동), 이후 "맑음"으로 돌아감
+  //  호우특보: 호우경보 발효 + 이미 비가 오는 상태(DEMO_WARNING_RAIN_MM)
+  //  실시간 모드에서는 기상청 초단기예보·특보 현황을 그대로 쓴다
+  const [weatherDemo, setWeatherDemo] = useState("none");
+  const [demoRainAt, setDemoRainAt] = useState(null); // 비 예보 시각 (시뮬레이션 시각)
+  useEffect(() => {
+    setWeatherDemo("none");
+    setDemoRainAt(null);
+  }, [live, sim.runId]);
+  useEffect(() => {
+    if (!live && demoRainAt != null && sim.now >= demoRainAt) {
+      sim.setRain(FORECAST.DEMO_RAIN_MM);
+      setDemoRainAt(null);
+      setWeatherDemo("none");
+    }
+  }, [live, demoRainAt, sim.now, sim.setRain]);
+  const chooseWeatherDemo = useCallback(
+    (v) => {
+      setDemoRainAt(v === "forecast" ? sim.now + FORECAST.DEMO_LEAD_MIN * 60000 : null);
+      if (v === "warning") sim.setRain(FORECAST.DEMO_WARNING_RAIN_MM);
+      else if (weatherDemo === "warning") sim.setRain(null); // 호우특보를 끄면 그 비도 그침
+      setWeatherDemo(v);
+    },
+    [sim.now, sim.setRain, weatherDemo],
+  );
+  // 기상특보: 실시간은 기상청 특보 현황(우리 지역 호우·태풍만)
+  const warnings = live
+    ? (weather.data?.warnings ?? null)
+    : weatherDemo === "warning"
+      ? { active: [{ kind: "호우경보", areas: "충청북도(청주)" }], preliminary: [], demo: true }
+      : null;
+  // 비 예보 기반 사전 수거 권고: 지금 비가 오거나 호우특보가 발효 중이면 띄우지 않음 (이미 "즉시 점검" 상황)
+  let advisory = null;
+  if (live) {
+    const now = Date.now();
+    const n = nextRain(weather.data?.forecast?.hours, now, { minMm: TH.RAIN_MM_H, withinH: FORECAST.LOOKAHEAD_H });
+    const rainingNow = (weather.data?.rainMm ?? 0) >= TH.RAIN_MM_H;
+    if (n && !rainingNow && !warnings?.active?.length) advisory = { ...n, now };
+  } else if (demoRainAt != null) {
+    advisory = { ts: demoRainAt, rainMm: FORECAST.DEMO_RAIN_MM, now: sim.now, demo: true };
+  }
+
   useEffect(() => {
     sim.setRealStations(live && REAL_STATION_ID ? [REAL_STATION_ID] : []);
   }, [live, sim.runId, sim.setRealStations]);
@@ -48,30 +99,139 @@ export default function App() {
   const feed = useSensorFeed({ enabled: live, stationId: REAL_STATION_ID, onSamples, resetKey: sim.runId });
   const realStation = sim.stations.find((s) => s.id === REAL_STATION_ID) ?? null;
 
+  // 실물 지점은 실시간 모드에서만 보인다 (시뮬레이션 모드에서는 가상 지점만)
+  const stations = useMemo(() => (live ? sim.stations : sim.stations.filter((s) => !s.real)), [live, sim.stations]);
+  const events = useMemo(() => {
+    const ids = new Set(stations.map((s) => s.id));
+    return sim.events.filter((e) => ids.has(e.stationId));
+  }, [stations, sim.events]);
+
+  // 메인 필터: 실물/가상, 상태 (페이지를 옮겨도 유지)
+  const [source, setSource] = useState("all");
+  useEffect(() => {
+    if (!live) setSource("all"); // 시뮬레이션 모드에는 실물 지점이 없어 실물/가상 선택을 숨김
+  }, [live]);
+  const [stateFilter, setStateFilter] = useState(null);
+  const bySource = useMemo(() => filterStations(stations, { source }), [stations, source]);
+  const shown = useMemo(() => filterStations(bySource, { state: stateFilter }), [bySource, stateFilter]);
+  // 메인에서 선택한 지점 → 지도 위 요약 카드 (필터로 빠지면 숨김)
+  const [selectedId, setSelectedId] = useState(null);
+  const selected = shown.find((s) => s.id === selectedId) ?? null;
+
+  // 수거 경로 (수거 경로 페이지에서만 계산): 위험(+주의) 지점을 출발지에서 도는 순서와 도로 경로
+  const [routeWarn, setRouteWarn] = useState(true);
+  const targets = useMemo(() => collectTargets(stations, { includeWarn: routeWarn }), [stations, routeWarn]);
+  const route = useRoute({ enabled: page.page === "route", depot: DEPOT, points: targets });
+
+  const station = page.page === "station" ? (stations.find((s) => s.id === page.id) ?? null) : null;
+  // 메인에서 요약 카드가 열려 있으면 알림 팝업을 카드 왼쪽으로 비켜 띄운다 (styles.css .has-card)
+  const cardOpen = page.page === "main" && selected != null;
+
   return (
-    <div className="app">
+    <div className={`app${page.page === "main" || page.page === "route" ? " is-fit" : ""}${page.page === "station" ? " on-station" : ""}${cardOpen ? " has-card" : ""}`}>
       {/* 상단바 + 위험 배너는 스크롤해도 위에 고정 */}
       <div className="sticky-head">
-        <TopBar sim={sim} mode={mode} onMode={setMode} weather={weather} feed={feed} realStation={realStation} />
+        <TopBar
+          sim={sim}
+          mode={mode}
+          onMode={setMode}
+          weather={weather}
+          feed={feed}
+          realStation={realStation}
+          page={page.page}
+          weatherDemo={weatherDemo}
+          onWeatherDemo={chooseWeatherDemo}
+        />
         {/* key=runId: "처음부터"를 누르면 알림 닫기 기록·토스트도 초기화 */}
-        <Alerts key={sim.runId} stations={sim.stations} events={sim.events} onSelect={setSelectedId} />
+        <WarningBanner warnings={warnings} />
+        <Alerts key={sim.runId} stations={stations} events={events} onSelect={openStation} />
+        <RainAdvisory advisory={advisory} stations={stations} onSelect={openStation} />
       </div>
 
-      <div className="layout">
-        <aside className="layout-side">
-          <Summary stations={sim.stations} />
-          <PriorityList stations={sim.stations} now={sim.now} selectedId={selectedId} onSelect={setSelectedId} />
-        </aside>
-        <main className="layout-main">
-          <MapView stations={sim.stations} selectedId={selectedId} onSelect={setSelectedId} />
-          <DrainDetail
-            station={selected}
-            now={sim.now}
-            onCollect={sim.collect}
-            onScenario={sim.setScenario}
+      {page.page === "main" && (
+        <div className="layout">
+          <aside className="layout-side">
+            <Summary
+              stations={bySource}
+              source={source}
+              onSource={live ? setSource : null}
+              state={stateFilter}
+              onState={setStateFilter}
+            />
+            <PriorityList
+              stations={shown}
+              events={events}
+              selectedId={selected?.id ?? null}
+              onSelect={setSelectedId}
+            />
+          </aside>
+          <main className="layout-main">
+            <MapView stations={shown} selectedId={selected?.id ?? null} onSelect={setSelectedId}>
+              {selected && (
+                <StationCard
+                  key={selected.id}
+                  station={selected}
+                  now={sim.now}
+                  onClose={() => setSelectedId(null)}
+                  onDetail={() => openStation(selected.id)}
+                />
+              )}
+            </MapView>
+          </main>
+        </div>
+      )}
+
+      {page.page === "station" && (
+        <main className="page is-narrow">
+          {station ? (
+            <DrainDetail
+              station={station}
+              now={sim.now}
+              onCollect={sim.collect}
+              onScenario={sim.setScenario}
+              backHref={paths.main()}
+            />
+          ) : (
+            <section className="card">
+              <a className="back-link btn btn-sm" href={paths.main()}>
+                ← 대시보드
+              </a>
+              <p className="muted">
+                {sim.stations.some((s) => s.id === page.id && s.real)
+                  ? "실물 지점은 실시간 모드에서만 볼 수 있습니다. 상단바에서 '실시간'을 누르세요."
+                  : `지점을 찾을 수 없습니다 (${page.id}).`}
+              </p>
+            </section>
+          )}
+        </main>
+      )}
+
+      {page.page === "compare" && (
+        <main className="page is-narrow compare-page">
+          <ComparePage />
+        </main>
+      )}
+
+      {page.page === "route" && (
+        <main className="page route-page">
+          <MapView
+            stations={stations}
+            onSelect={openStation}
+            route={route.data}
+            depot={DEPOT}
+            tall
+            label="수거 경로 지도"
+          />
+          <RoutePanel
+            includeWarn={routeWarn}
+            onIncludeWarn={setRouteWarn}
+            route={route}
+            stations={stations}
+            depotName={DEPOT.name}
+            onSelect={openStation}
           />
         </main>
-      </div>
+      )}
     </div>
   );
 }

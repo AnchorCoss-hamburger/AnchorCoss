@@ -1,14 +1,15 @@
 // 알림 (DESIGN.md 5장, 기획서 6장 4번 — 화면 배너/토스트만)
 //
-// 위험 배너: "지금 위험인 지점" 기준. 닫기 전까지 유지, 위험이 풀리면 자동 제거.
-//            닫은 뒤 다시 위험이 되면(새 전환) 다시 뜬다. 최대 3개 + "외 N곳".
+// 위험 배너: "지금 위험인 지점"을 한 줄에 모아 표시 (지점마다 누르면 이동하는 칩).
+//            닫기 전까지 유지, 위험이 풀리면 자동 제거. 닫은 뒤 다시 위험이 되면(새 전환) 다시 뜬다.
+//            칩은 최대 MAX_BANNERS개 + "외 N곳".
 // 토스트:    상태 전환 이벤트 중 주의/정상 복귀/점검 필요. 5초 뒤 자동으로 사라짐. 최대 3개.
 
 import { useEffect, useRef, useState } from "react";
 import { STATES, STATE_META, FLAGS } from "../logic/states.js";
-import { sortByPriority } from "../ui/format.js";
+import { sortByPriority, fmtG } from "../ui/format.js";
 
-const MAX_BANNERS = 3;
+const MAX_BANNERS = 5;
 const MAX_TOASTS = 3;
 const TOAST_MS = 5000;
 
@@ -56,36 +57,39 @@ export function Alerts({ stations, events, onSelect }) {
   const shown = banners.slice(0, MAX_BANNERS);
   const more = banners.length - shown.length;
 
-  const dismiss = (key) => setDismissed((prev) => new Set(prev).add(key));
+  const dismissAll = () => setDismissed((prev) => new Set([...prev, ...banners.map((b) => b.key)]));
   const closeToast = (id) => setToasts((p) => p.filter((t) => t.id !== id));
+  const anyRain = shown.some(({ s }) => s.judgement.flags.includes(FLAGS.RAINING));
 
   return (
     <>
       {shown.length > 0 && (
-        <div className="banners">
-          {shown.map(({ s, key }) => {
-            const raining = s.judgement.flags.includes(FLAGS.RAINING);
-            return (
-              <div key={key} className={`banner${raining ? " is-rain" : ""}`} role="alert">
-                <span className="banner-icon" aria-hidden="true">
-                  ⚠
-                </span>
-                <div className="banner-text">
-                  <strong>
-                    {s.name} — 수거 필요{raining && " (우천 중)"}
-                  </strong>
-                  <span className="banner-reason">{s.judgement.reason[0]}</span>
-                </div>
-                <button className="btn" onClick={() => onSelect(s.id)}>
-                  지점 보기
-                </button>
-                <button className="banner-close" onClick={() => dismiss(key)} aria-label={`${s.name} 알림 닫기`}>
-                  ✕
-                </button>
-              </div>
-            );
-          })}
-          {more > 0 && <p className="banner-more">외 {more}곳 위험 — 수거 우선순위 목록을 확인하세요.</p>}
+        <div className={`alert-strip${anyRain ? " is-rain" : ""}`} role="alert">
+          <strong className="alert-strip-title">
+            <span aria-hidden="true">⚠</span> 수거 필요 {banners.length}곳
+          </strong>
+          <ul className="alert-chips" aria-label="수거 필요 지점">
+            {shown.map(({ s, key }) => {
+              const raining = s.judgement.flags.includes(FLAGS.RAINING);
+              return (
+                <li key={key}>
+                  <button
+                    className="alert-chip"
+                    onClick={() => onSelect(s.id)}
+                    title={`${s.judgement.reason[0]} — 눌러서 지점 보기`}
+                  >
+                    {s.name.replace("빗물받이 ", "")}
+                    <span className="alert-chip-g num">{fmtG(s.judgement.metrics?.totalG)}</span>
+                    {raining && <span className="alert-chip-rain">우천</span>}
+                  </button>
+                </li>
+              );
+            })}
+            {more > 0 && <li className="alert-more">외 {more}곳</li>}
+          </ul>
+          <button className="banner-close" onClick={dismissAll} aria-label="수거 필요 알림 닫기">
+            ✕
+          </button>
         </div>
       )}
 

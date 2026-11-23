@@ -1,8 +1,9 @@
 // 통신 상태 (DESIGN.md 5장): 마지막 수신 · 신호 세기 · 배터리. 두절 시 회색 + 점검 필요
+// 실물 지점(real)은 유선 연결·외부 전원이라 신호 세기·배터리를 표시하지 않는다.
 import { STATES, CHECK_CAUSE } from "../logic/states.js";
 import { fmtAgo, rssiLevel } from "../ui/format.js";
 
-export function CommStatus({ station, now: simNow }) {
+export function CommStatus({ station, now: simNow, showLast = true }) {
   // 실물 지점은 실제 시계, 가상 지점은 시뮬레이터 시계로 경과 시간을 계산
   const now = station.clockNow ?? simNow;
   const s = station.latest;
@@ -14,25 +15,35 @@ export function CommStatus({ station, now: simNow }) {
     <div className={`comm${stale ? " is-stale" : ""}`}>
       {stale && <p className="comm-alert">점검 필요 — 마지막 수신 {fmtAgo(now, s?.ts)}</p>}
       <dl className="comm-grid">
-        <div>
-          <dt>마지막 수신</dt>
-          <dd className="num">{fmtAgo(now, s?.ts)}</dd>
-        </div>
-        <div>
-          <dt>신호 세기</dt>
-          <dd className="num">
-            <span className="rssi" aria-label={`신호 ${level}/4`}>
-              {[1, 2, 3, 4].map((n) => (
-                <span key={n} className={`rssi-bar${n <= level ? " is-on" : ""}`} style={{ height: `${n * 25}%` }} />
-              ))}
-            </span>
-            {s ? `${s.rssi} dBm` : "—"}
-          </dd>
-        </div>
-        <div>
-          <dt>배터리</dt>
-          <dd className={`num${s && s.batteryPct < 20 ? " tx-danger" : ""}`}>{s ? `${s.batteryPct}%` : "—"}</dd>
-        </div>
+        {showLast && (
+          <div>
+            <dt>마지막 수신</dt>
+            <dd className="num">{fmtAgo(now, s?.ts)}</dd>
+          </div>
+        )}
+        {!station.real && (
+          <>
+            <div>
+              <dt>신호 세기</dt>
+              <dd className="num">
+                <span className="rssi" aria-label={`신호 ${level}/4`}>
+                  {[1, 2, 3, 4].map((n) => (
+                    <span
+                      key={n}
+                      className={`rssi-bar${n <= level ? " is-on" : ""}`}
+                      style={{ height: `${n * 25}%` }}
+                    />
+                  ))}
+                </span>
+                {s ? `${s.rssi} dBm` : "—"}
+              </dd>
+            </div>
+            <div>
+              <dt>배터리</dt>
+              <dd className={`num${s && s.batteryPct < 20 ? " tx-danger" : ""}`}>{s ? `${s.batteryPct}%` : "—"}</dd>
+            </div>
+          </>
+        )}
       </dl>
     </div>
   );

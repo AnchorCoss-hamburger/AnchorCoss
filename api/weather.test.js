@@ -56,9 +56,10 @@ describe("api/weather", () => {
     const f = vi.fn(async () => ({ ok: true, status: 200, text: async () => SAMPLE }));
     vi.stubGlobal("fetch", f);
     await handler({ url: "/api/weather" }, fakeRes());
+    const first = f.mock.calls.length; // 실황 + 예보 + 오늘 누적 강수량
     const res = fakeRes();
     await handler({ url: "/api/weather" }, res);
-    expect(f).toHaveBeenCalledTimes(1);
+    expect(f).toHaveBeenCalledTimes(first); // 두 번째는 기상청을 다시 부르지 않음
     expect(res.body.cached).toBe(true);
   });
 
